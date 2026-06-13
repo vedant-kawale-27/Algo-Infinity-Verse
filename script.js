@@ -2701,6 +2701,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initProfile();
     initScrollEffects();
     initDarkMode();
+     const welcomeBanner = document.getElementById('welcomeBanner');
+    const closeBanner = document.getElementById('closeBanner');
+
+    if (!localStorage.getItem('welcomeShown')) {
+        welcomeBanner.classList.remove('hidden');
+        localStorage.setItem('welcomeShown', 'true');
+    }
+
+    if (closeBanner && welcomeBanner) {
+    closeBanner.addEventListener('click', () => {
+        welcomeBanner.classList.add('hidden');
+    });
+}
 
     // Update profile display after loading
     
@@ -3361,7 +3374,6 @@ function initQuizSection() {
     } catch (error) {
         console.error('Error initializing quiz section:', error);
     }
-    
       quizGrid.appendChild(card);
       card.addEventListener("click", () => {
         startQuiz(topicKey);
@@ -6070,7 +6082,6 @@ function loadUserData() {
     }
 
     // Update profile display after loading
-    initProfile();
 
   });
 
