@@ -243,22 +243,23 @@
     };
 
     function showError(input, message) {
-      let errorEl = input.parentElement.querySelector(".inline-error");
+  const container = input.closest(".form-group") || input.parentElement;
+  let errorEl = container.querySelector(".inline-error");
 
-      if (!errorEl) {
-        errorEl = document.createElement("div");
-        errorEl.className = "inline-error";
-        errorEl.style.color = "#ef4444";
-        errorEl.style.fontSize = "0.8rem";
-        errorEl.style.marginTop = "0.3rem";
-        input.parentElement.appendChild(errorEl);
-      }
+  if (!errorEl) {
+    errorEl = document.createElement("div");
+    errorEl.className = "inline-error";
+    errorEl.style.color = "#ef4444";
+    errorEl.style.fontSize = "0.8rem";
+    errorEl.style.marginTop = "0.3rem";
+    container.appendChild(errorEl);
+  }
 
-      errorEl.textContent = message;
-      input.style.borderColor = message
-        ? "#ef4444"
-        : "rgba(255, 255, 255, 0.1)";
-    }
+  errorEl.textContent = message;
+  input.style.borderColor = message
+    ? "#ef4444"
+    : "rgba(255, 255, 255, 0.1)";
+}
 
     form.querySelectorAll("input").forEach((input) => {
       input.addEventListener("input", () => {
