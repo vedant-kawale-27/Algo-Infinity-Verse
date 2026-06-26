@@ -1460,15 +1460,21 @@ function initRoadmap() {
         } else if (level === "intermediate") {
           document.getElementById("roadmapOverviewTab")?.click();
         } else if (level === "advanced") {
-          document
-            .querySelector(".roadmap-container")
-            ?.scrollIntoView({ behavior: "smooth" });
+          document.getElementById("roadmapOverviewTab")?.click();
         }
       });
     });
 
     roadmapStagesInitialized = true;
   }
+  document.querySelectorAll(".roadmap-btn").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      button.closest(".stage").click();
+    });
+  });
   if (progressBar && stages.length >= 3) {
     const progress = Math.min((userProgress.completedProblems.length / practiceProblems.length) * 100, 100);
     setTimeout(() => {
