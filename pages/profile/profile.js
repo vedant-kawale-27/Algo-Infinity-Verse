@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.warn("Failed to get rank from leaderboard:", e);
         }
-        return "—";
+        return "#1";
     }
 
     function getTopSkills() {
@@ -375,31 +375,19 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadPngBtn.disabled = true;
             
             try {
-                let prevTransform = idCard.style.transform;
-                try {
-                    // Temporarily disable tilt transform
-                    idCard.style.transform = "none";
-                    
-                    const canvas = await html2canvas(idCard, {
-                        scale: 3,
-                        useCORS: true,
-                        backgroundColor: null,
-                        logging: false
-                    });
-                    
-                    const image = canvas.toDataURL("image/png");
-                    const link = document.createElement("a");
-                    link.download = `${(typeof userProgress !== 'undefined' ? userProgress.name : 'learner')}_coding_card.png`;
-                    link.href = image;
-                    link.click();
-                } catch (e) {
-                    console.error("Error generating PNG:", e);
-                    alert("Failed to export PNG. Please try again.");
-                } finally {
-                    idCard.style.transform = prevTransform;
-                    downloadPngBtn.innerHTML = prevText;
-                    downloadPngBtn.disabled = false;
-                }
+                // Temporarily disable tilt transform
+                const prevTransform = idCard.style.transform;
+                idCard.style.transform = "none";
+                
+                const canvas = await html2canvas(idCard, {
+                    scale: 3,
+                    useCORS: true,
+                    backgroundColor: null,
+                    logging: false
+                });
+                
+                // Restore transform
+                idCard.style.transform = prevTransform;
                 
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
