@@ -1948,7 +1948,7 @@ function initPracticeSection() {
       }
       updateRecommendationStatus("Finding...", "loading", requestId);
 
-      const res = await fetch("/api/recommendations/next", { signal });
+      const res = await fetch("/api/recommendations/next", { signal, credentials: "include" });
       if (res.status === 401) {
          alert("Please log in to get AI recommendations.");
          updateRecommendationStatus("Authentication required", "cancelled", requestId);
@@ -3776,6 +3776,7 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
 async function executeViaApi(lang, code, originalCode) {
   const response = await fetch(`${API_BASE}/api/execute`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ 
       sourceCode: code, 
@@ -5332,6 +5333,7 @@ window.saveActiveProblemNotes = async function() {
   try {
     const res = await fetch(`/api/problem-notes/${currentProblem.id}`, {
       method: "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(noteData)
     });
@@ -5353,7 +5355,7 @@ window.saveActiveProblemNotes = async function() {
 window.syncProblemNotesDown = async function() {
   if (location.protocol === "file:") return;
   try {
-    const res = await fetch("/api/problem-notes");
+    const res = await fetch("/api/problem-notes", { credentials: "include" });
     if (res.status === 200) {
       const data = await res.json();
       if (data.success && data.notes) {
@@ -5377,6 +5379,7 @@ window.rateRecallDifficulty = async function(quality) {
   try {
     const res = await fetch(`/api/spaced-repetition/${problemId}`, {
       method: "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ existing, quality })
     });
@@ -5437,7 +5440,7 @@ window.rateRecallDifficulty = async function(quality) {
 window.syncSpacedRepetitionDown = async function() {
   if (location.protocol === "file:") return;
   try {
-    const res = await fetch("/api/spaced-repetition");
+    const res = await fetch("/api/spaced-repetition", { credentials: "include" });
     if (res.status === 200) {
       const data = await res.json();
       if (data.success && data.cards) {
