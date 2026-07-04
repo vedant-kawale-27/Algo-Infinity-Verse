@@ -1341,7 +1341,28 @@ async function handleApi(req, res, pathname) {
     return sendJson(res, 200, { success: true }, { "Set-Cookie": authCookies(accessToken, refreshToken, req) });
   }
 
-if (pathname === "/api/session" && req.method === "GET") {
+  if (pathname === "/api/guest" && req.method === "POST") {
+    try {
+      const guestId = crypto.randomUUID();
+      const guestUser = {
+        id: `guest-${guestId}`,
+        name: "Guest",
+        email: `guest-${guestId}@local`,
+      };
+      const token = createAccessToken(guestUser);
+      const refreshToken = createRefreshToken(guestUser);
+      return sendJson(
+        res, 200,
+        { user: { id: guestUser.id, name: guestUser.name, email: guestUser.email } },
+        { "Set-Cookie": authCookies(token, refreshToken, req) },
+      );
+    } catch (err) {
+      console.error("[guest] Unexpected error:", err);
+      return sendJson(res, 500, { error: "Guest login failed. Please try again." });
+    }
+  }
+
+  if (pathname === "/api/session" && req.method === "GET") {
     const session = getSession(req);
     
     

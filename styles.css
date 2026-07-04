@@ -1160,6 +1160,17 @@ html.light-mode .recent-item.selected {
   border-color: var(--primary);
 }
 
+.nav-auth-guest {
+  border-color: rgba(108, 92, 231, 0.4);
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.nav-auth-guest:hover {
+  border-color: #6c5ce7;
+  background: #6c5ce7;
+  color: var(--text-primary);
+}
+
 .nav-cta {
   margin-left: 0.75rem;
   padding-left: 0.75rem;
@@ -8972,6 +8983,50 @@ html.auth-verified [data-guest-only] {
 
 .google-btn-icon {
   flex-shrink: 0;
+}
+
+.guest-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.guest-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #6c5ce7;
+}
+
+.guest-btn:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 2px;
+}
+
+.guest-btn[data-loading="true"] {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+[data-theme="light"] .guest-btn {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a2e;
+}
+
+[data-theme="light"] .guest-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: #6c5ce7;
 }
 
 [data-theme="light"] .google-btn {
