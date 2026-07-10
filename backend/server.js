@@ -43,8 +43,7 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 const MEMORY_FILE = path.join(DATA_DIR, "memory.json");
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
-const SIGNUP_RATE_LIMIT = 5;
-const SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+
 const signupAttempts = new Map();
 
 // Periodic sweeper — runs every SIGNUP_WINDOW_MS and deletes any identifier
@@ -54,14 +53,14 @@ const signupAttempts = new Map();
 const _signupSweeper = setInterval(() => {
   const now = Date.now();
   for (const [identifier, timestamps] of signupAttempts) {
-    const fresh = timestamps.filter((t) => now - t < SIGNUP_WINDOW_MS);
+    const fresh = timestamps.filter((t) => now - t < securityConfig.SIGNUP_WINDOW_MS);
     if (fresh.length === 0) {
       signupAttempts.delete(identifier);
     } else {
       signupAttempts.set(identifier, fresh);
     }
   }
-}, SIGNUP_WINDOW_MS);
+},securityConfig.SIGNUP_WINDOW_MS);
 
 // Allow the process to exit cleanly even while the interval is live
 // (relevant in test environments and graceful-shutdown scenarios).
@@ -102,9 +101,9 @@ function isSignupRateLimited(identifier) {
   const attempts = signupAttempts.get(identifier) || [];
   // Trim stale timestamps on every read so the per-identifier array stays
   // small even between sweeper runs.
-  const recentAttempts = attempts.filter((t) => now - t < SIGNUP_WINDOW_MS);
+  const recentAttempts = attempts.filter((t) => now - t <securityConfig.SIGNUP_WINDOW_MS);
   signupAttempts.set(identifier, recentAttempts);
-  return recentAttempts.length >= SIGNUP_RATE_LIMIT;
+  return recentAttempts.length >= securityConfig.SIGNUP_RATE_LIMIT;
 }
 
 function recordSignupAttempt(identifier) {
@@ -112,31 +111,29 @@ function recordSignupAttempt(identifier) {
   const attempts = signupAttempts.get(identifier) || [];
   // Trim before appending so the array never accumulates beyond
   // SIGNUP_RATE_LIMIT + 1 entries between sweeper passes.
-  const recentAttempts = attempts.filter((t) => now - t < SIGNUP_WINDOW_MS);
+  const recentAttempts = attempts.filter((t) => now - t <securityConfig.SIGNUP_WINDOW_MS);
   recentAttempts.push(now);
   signupAttempts.set(identifier, recentAttempts);
 }
 
 async function normalizeAuthDelay() {
-  return new Promise((resolve) => setTimeout(resolve, 500));
+  return new Promise((resolve) => setTimeout(resolve, securityConfig.AUTH_DELAY_MS));
 }
 // ── Login Rate Limiting (failed attempts only) ──────────────────────────────
-const LOGIN_RATE_LIMIT = 5; // max failed attempts before lockout
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15-minute sliding window
 const loginFailures = new Map(); // identifier → [timestamp, ...]
 
 // Periodic sweeper — mirrors the signup sweeper to prevent unbounded growth.
 const _loginSweeper = setInterval(() => {
   const now = Date.now();
   for (const [identifier, timestamps] of loginFailures) {
-    const fresh = timestamps.filter((t) => now - t < LOGIN_WINDOW_MS);
+    const fresh = timestamps.filter((t) => now - t < securityConfig.LOGIN_WINDOW_MS);
     if (fresh.length === 0) {
       loginFailures.delete(identifier);
     } else {
       loginFailures.set(identifier, fresh);
     }
   }
-}, LOGIN_WINDOW_MS);
+}, securityConfig.LOGIN_WINDOW_MS);
 if (_loginSweeper.unref) _loginSweeper.unref();
 
 /**
@@ -146,9 +143,9 @@ if (_loginSweeper.unref) _loginSweeper.unref();
 function isLoginRateLimited(identifier) {
   const now = Date.now();
   const attempts = loginFailures.get(identifier) || [];
-  const recent = attempts.filter((t) => now - t < LOGIN_WINDOW_MS);
+  const recent = attempts.filter((t) => now - t < securityConfig.LOGIN_WINDOW_MS);
   loginFailures.set(identifier, recent); // keep array trimmed
-  return recent.length >= LOGIN_RATE_LIMIT;
+  return recent.length >=securityConfig.LOGIN_RATE_LIMIT;
 }
 
 /**
@@ -158,7 +155,7 @@ function isLoginRateLimited(identifier) {
 function recordLoginFailure(identifier) {
   const now = Date.now();
   const attempts = loginFailures.get(identifier) || [];
-  const recent = attempts.filter((t) => now - t < LOGIN_WINDOW_MS);
+  const recent = attempts.filter((t) => now - t < securityConfig.LOGIN_WINDOW_MS);
   recent.push(now);
   loginFailures.set(identifier, recent);
 }
