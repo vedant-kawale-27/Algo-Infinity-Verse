@@ -1,3 +1,5 @@
+import { shuffle, calculatePercentage, calculateXp, updateQuizRecord } from './quizScoring.js';
+
 let currentQuiz = null;
 let lastQuizReview = null;
 let lastQuizResultData = null;
@@ -5,8 +7,7 @@ let quizStartTime = null;
 let quizTimerInterval = null;
 
 function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; }
-  return array;
+  return shuffle(array);
 }
 
 function getQuizTopicKey(topic) {
@@ -164,16 +165,14 @@ function finishQuiz() {
   const topicKey = currentQuiz.topic;
   const score = currentQuiz.score;
   const total = currentQuiz.questions.length;
-  const percentage = Math.round((score / total) * 100);
+  const percentage = calculatePercentage(score, total);
   const completionTime = stopQuizTimer();
   if (!userProgress.quizScores[topicKey]) userProgress.quizScores[topicKey] = { bestScore: 0, attempts: 0, totalXP: 0 };
-  const record = userProgress.quizScores[topicKey];
   if (!userProgress.bestQuizTimes[topicKey] || completionTime < userProgress.bestQuizTimes[topicKey]) userProgress.bestQuizTimes[topicKey] = completionTime;
-  record.attempts++;
-  if (percentage > record.bestScore) record.bestScore = percentage;
-  const xpEarned = Math.round(score * 10);
+  const xpEarned = calculateXp(score);
+  userProgress.quizScores[topicKey] = updateQuizRecord(userProgress.quizScores[topicKey], { percentage, xpEarned });
+  const record = userProgress.quizScores[topicKey];
   if (typeof addXP === 'function') addXP(xpEarned);
-  record.totalXP += xpEarned;
   if (typeof recordAnalyticsEvent === 'function') recordAnalyticsEvent("quiz", { topicKey, score, total, percentage, xpEarned, completionTime });
   if (typeof recordDailyActivity === 'function') recordDailyActivity(1);
   if (typeof handleQuizCompletionForRevision === 'function') handleQuizCompletionForRevision(topicKey, percentage);
