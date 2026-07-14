@@ -308,6 +308,41 @@ An interactive DSA study scheduling engine driven by spaced repetition algorithm
 
 ----
 
+### Firebase Configuration
+
+This project uses Firebase Admin SDK for Firestore functionality.
+
+Add the following variables to your `.env` file:
+
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n"
+```
+
+To obtain these values:
+
+1. Open Firebase Console.
+2. Select your project.
+3. Go to **Project Settings → Service Accounts**.
+4. Click **Generate New Private Key**.
+5. Download the service account JSON file.
+6. Copy:
+   - `project_id` → `FIREBASE_PROJECT_ID`
+   - `client_email` → `FIREBASE_CLIENT_EMAIL`
+   - `private_key` → `FIREBASE_PRIVATE_KEY`
+
+> Never commit real Firebase credentials to version control.
+
+3. **Start learning!**
+   - Create your profile
+   - Browse DSA topics
+   - Take quizzes
+   - Practice problems
+   - Track your progress
+
+---
+
 ## Project Structure
 
 ```
