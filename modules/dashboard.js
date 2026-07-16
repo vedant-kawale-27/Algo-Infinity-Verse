@@ -445,20 +445,22 @@ async function loadLeaderboard(page = 1) {
   }
 
   const limit = LEADERBOARD_LIMIT;
-  const skip = (page - 1) * limit;
   const signal = apiAbort.getSignal('leaderboard');
 
   try {
+    // /api/leaderboard paginates via `page`/`limit` and returns totals nested
+    // under `pagination.totalUsers` — it has no `skip` param or top-level
+    // `total` field (see #2539).
     const response = await apiCache.fetchWithCache(
-      `/api/leaderboard?limit=${limit}&skip=${skip}`,
+      `/api/leaderboard?page=${page}&limit=${limit}`,
       { credentials: 'include', signal },
       300000,
       'json'
     );
     return {
-      leaders: response.users || response.leaders || [],
+      leaders: response.leaders || [],
       currentUserId: response.currentUserId || null,
-      total: response.total || 0,
+      total: response.pagination?.totalUsers || 0,
     };
   } finally {
     apiAbort.clearSignal('leaderboard');
