@@ -31,6 +31,7 @@ const practiceTools = [
 
   // ── Debugging ──
   { name: "Dry Run Simulator", path: "/pages/tools/dry-run-simulator/dry-run-simulator.html", category: "Debugging", icon: "fa-play", desc: "Step through your code execution line by line to trace variables and find bugs." },
+  { name: "Desk-Check / Trace Table Builder", path: "/pages/tools/trace-table-builder/trace-table-builder.html", category: "Debugging", icon: "fa-table", desc: "Build teacher-style algorithm trace tables with custom variables, manual desk-check, or guided auto-fill." },
   { name: "Solution Evolution", path: "/pages/tools/solution-evolution/solution-evolution.html", category: "Debugging", icon: "fa-code-branch", desc: "Visualize how brute-force solutions evolve into optimized ones through iterative refinement." },
   { name: "Algorithm Crime Lab", path: "/pages/tools/investigation-lab/investigation-lab.html", category: "Debugging", icon: "fa-flask", desc: "Investigate algorithmic failures and bugs in a forensic-style debugging environment." },
   { name: "DSA Detective Mode", path: "/pages/tools/dsa-detective/dsa-detective.html", category: "Debugging", icon: "fa-gun", desc: "Guess the correct algorithm from clues in a detective-style interactive challenge." },

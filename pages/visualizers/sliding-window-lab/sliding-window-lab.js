@@ -30,12 +30,8 @@ let swState = {
 function swInit() {
   document.querySelectorAll('.sw-algo-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.sw-algo-btn').forEach((b) => {
-        b.classList.remove('active');
-        b.setAttribute('aria-pressed', 'false');
-      });
+      document.querySelectorAll('.sw-algo-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      btn.setAttribute('aria-pressed', 'true');
       swState.problem = btn.dataset.problem;
       swSyncProblemUI();
       swRebuild();
@@ -49,7 +45,6 @@ function swInit() {
       swState.problem = preset.problem;
       document.querySelectorAll('.sw-algo-btn').forEach((b) => {
         b.classList.toggle('active', b.dataset.problem === preset.problem);
-        b.setAttribute('aria-pressed', b.dataset.problem === preset.problem ? 'true' : 'false');
       });
       document.getElementById('swInput').value = preset.input;
       if (preset.k != null) document.getElementById('swK').value = String(preset.k);
