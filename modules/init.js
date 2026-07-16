@@ -1,4 +1,8 @@
 import { initLoadingScreen } from './loading.js';
+// (Animation already started by the inline script in index.html —
+//  this import is kept for the export chain; the guard in splash.js
+//  makes initLoadingScreen() a no-op when called from here.)
+
 import { initNavbar } from './navbar.js';
 import { initHeroSection } from './hero.js';
 import { initTopicOfTheDay } from './topics.js';
@@ -99,7 +103,6 @@ window.initDateDisplay = initDateDisplay;
 
 function initializeApp() {
   loadUserData();
-  initLoadingScreen();
   initNavbar();
   initHeroSection();
   initTopicOfTheDay();

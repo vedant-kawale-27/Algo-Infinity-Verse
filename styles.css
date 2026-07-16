@@ -70,33 +70,7 @@ body {
   border-radius: 4px;
 }
 
-/* ===== LOADING SCREEN ===== */
-#loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--dark-bg, #0a0a0a);
-  z-index: 10001;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition:
-    opacity 0.5s ease,
-    visibility 0.5s ease;
-}
-
-#loading-screen.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.loader {
-  text-align: center;
-}
-
+/* ===== BIG BOX (general card hover effect, used across app) ===== */
 .big-box {
   transition: transform 0.3s ease-in-out;
 }
@@ -109,51 +83,7 @@ body {
   transform: none;
 }
 
-.infinity-loader {
-  font-size: 6rem;
-  font-weight: 900;
-  background: var(--gradient-1, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.loading-bar {
-  width: 300px;
-  height: 6px;
-  background: var(--dark-card, #1a1a1a);
-  border-radius: 3px;
-  margin: 20px auto;
-  overflow: hidden;
-}
-
-.loading-progress {
-  height: 100%;
-  background: var(--gradient-1, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-  width: 0%;
-  animation: loadProgress 2s ease-in-out forwards;
-}
-
-@keyframes loadProgress {
-  0% {
-    width: 0%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
+/* ===== LOADING TEXT (used by quiz editor modal and other loaders) ===== */
 .loading-text {
   color: var(--text-secondary, #888);
   font-size: 0.9rem;
@@ -162,59 +92,13 @@ body {
 }
 
 @keyframes textPulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #loading-screen {
-    transition: none;
-  }
-
-  .infinity-loader {
-    animation: none;
-  }
-
-  .loading-progress {
-    animation: none;
-    width: 100%;
-  }
-
-  .big-box {
-    transition: none;
-  }
-
-  .big-box:hover {
-    transform: none;
-  }
-
   .loading-text {
     animation: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .infinity-loader {
-    font-size: 4rem;
-  }
-
-  .loading-bar {
-    width: 200px;
-  }
-}
-
-@media (max-width: 480px) {
-  .infinity-loader {
-    font-size: 3rem;
-  }
-
-  .loading-bar {
-    width: 150px;
   }
 }
 
