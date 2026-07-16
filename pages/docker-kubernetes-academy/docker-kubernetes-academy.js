@@ -89,7 +89,10 @@ function loadLesson(index) {
   const lesson = curriculum[index];
 
   lessonTitle.textContent = lesson.title;
-  lessonBody.innerHTML = lesson.content;
+  lessonBody.innerHTML = (window.eli5Toggle ? window.eli5Toggle.wrapContent(lesson.content, '') : lesson.content);
+  if (window.eli5Toggle) {
+    window.eli5Toggle.initToggle('docker-k8s', lessonBody);
+  }
 
   prevBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
   nextBtn.style.visibility = index === curriculum.length - 1 ? 'hidden' : 'visible';
