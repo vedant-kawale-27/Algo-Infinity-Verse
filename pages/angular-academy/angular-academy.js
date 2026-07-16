@@ -1559,6 +1559,7 @@ function runCode() {
         <head>
             <meta charset="utf-8">
             <script src="https://cdn.tailwindcss.com"></script>
+            <script src="https://cdn.jsdelivr.net/npm/rxjs@7/bundles/rxjs.umd.min.js"></script>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
             <style>
                 body { margin: 0; padding: 20px; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; background-color: #ffffff; color: #1f2937; }
@@ -1605,7 +1606,46 @@ function runCode() {
                 // Standalone Mini Compiler
                 function runAngularApp(code) {
                     try {
-                        const cleanCode = code.replace(/\\r/g, '');
+                        let cleanCode = code.replace(/\\r/g, '');
+
+                        // Extract and register @Injectable services for DI
+                        const serviceRegistry = {};
+                        function extractBraced(code, startPos) {
+                            let depth = 1, i = startPos, inStr = false, strChar = null;
+                            while (i < code.length && depth > 0) {
+                                const ch = code[i];
+                                if (inStr) { if (ch === strChar && code[i-1] !== '\\\\') inStr = false; }
+                                else {
+                                    if (ch === '{') depth++;
+                                    else if (ch === '}') depth--;
+                                    else if (ch === "'" || ch === '"' || ch === '\`') { inStr = true; strChar = ch; }
+                                }
+                                i++;
+                            }
+                            return code.substring(startPos, i - 1);
+                        }
+                        const injClassRegex = /@Injectable\\s*\\([^)]*\\)\\s*\\n?\\s*export\\s+class\\s+(\\w+)/g;
+                        let injMatch;
+                        while ((injMatch = injClassRegex.exec(cleanCode)) !== null) {
+                            const svcName = injMatch[1];
+                            const openIdx = cleanCode.indexOf('{', injMatch.index);
+                            const svcBody = extractBraced(cleanCode, openIdx + 1);
+                            const svcInst = {};
+                            const svcMethodRx = /(\\w+)\\s*\\([^)]*\\)\\s*{([\\s\\S]*?)}/g;
+                            let svcM;
+                            while ((svcM = svcMethodRx.exec(svcBody)) !== null) {
+                                const mn = svcM[1];
+                                const mb = svcM[2];
+                                svcInst[mn] = function(...args) {
+                                    try { const fn = new Function('svcInst', 'args', mb.replace(/this\\./g, 'svcInst.')); return fn(svcInst, args); } catch(e) { console.log(mn + ' called'); }
+                                };
+                            }
+                            let key = svcName[0].toLowerCase() + svcName.slice(1);
+                            serviceRegistry[key] = svcInst;
+                            if (key.endsWith('service')) serviceRegistry[key.slice(0, -7)] = svcInst;
+                            cleanCode = cleanCode.replace(injMatch[0] + '{' + svcBody + '}', '');
+                            injClassRegex.lastIndex = 0;
+                        }
 
                         // Extract @Component metadata
                         const componentMatch = cleanCode.match(/@Component\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)/);
@@ -1632,7 +1672,7 @@ function runCode() {
                             throw new Error("Could not find Component class. Ensure your component is exported as 'export class XComponent { ... }'.");
                         }
                         const className = classMatch[1];
-                        const classBody = classMatch[2];
+                        const classBody = classMatch[2].replace(/@(Input|Output)\\s*\\([^)]*\\)\\s*/g, '');
 
                         // Define component state instance
                         const instance = {};
@@ -1683,15 +1723,28 @@ function runCode() {
                             signals[name] = signalFn;
                         });
 
-                        // Parse computed values
-                        const computedMatches = [...classBody.matchAll(/(\\w+)\\s*=\\s*computed\\(\\(\\)\\s*=>\\s*(.*?)\\);?/g)];
-                        computedMatches.forEach(m => {
-                            const name = m[1];
-                            const bodyExpr = m[2].trim();
+                        // Parse computed values with parenthesis tracking
+                        const computedRegex2 = /(\\w+)\\s*=\\s*computed\\(/g;
+                        let compMatch2;
+                        while ((compMatch2 = computedRegex2.exec(classBody)) !== null) {
+                            const name = compMatch2[1];
+                            const startPos = compMatch2.index + compMatch2[0].length;
+                            let depth = 1, i = startPos, inStr = false, strChar = null;
+                            while (i < classBody.length && depth > 0) {
+                                const ch = classBody[i];
+                                if (inStr) { if (ch === strChar && classBody[i-1] !== '\\\\') inStr = false; }
+                                else {
+                                    if (ch === '(') depth++;
+                                    else if (ch === ')') depth--;
+                                    else if (ch === "'" || ch === '"' || ch === '\`') { inStr = true; strChar = ch; }
+                                }
+                                i++;
+                            }
+                            const bodyExpr = classBody.substring(startPos, i - 1).trim().replace(/^\\(\\)\\s*=>\\s*/, '');
                             instance[name] = function() {
                                 let processedExpr = bodyExpr;
                                 Object.keys(signals).forEach(sigName => {
-                                    processedExpr = processedExpr.replace(new RegExp('this.' + sigName + '\\\\s*\\\\(\\\\)', 'g'), \`instance.\${sigName}()\`);
+                                    processedExpr = processedExpr.replace(new RegExp('this\\.' + sigName + '\\\\s*\\\\(\\\\)', 'g'), \`instance.\${sigName}()\`);
                                 });
                                 try {
                                     return eval(processedExpr);
@@ -1700,15 +1753,20 @@ function runCode() {
                                 }
                             };
                             instance[name].isSignal = true;
-                        });
+                        }
 
                         // Parse standard class fields/properties
                         const propMatches = [...classBody.matchAll(/(?<!let\\s|const\\s|var\\s)(\\w+)\\s*=\\s*(.*?);?(?=\\n|$)/g)];
                         propMatches.forEach(m => {
                             const name = m[1];
-                            const valExpr = m[2].trim();
+                            let valExpr = m[2].trim();
                             if (name === 'template' || name === 'selector' || name === 'standalone') return;
                             if (instance[name] !== undefined) return;
+
+                            if (valExpr.startsWith('new EventEmitter')) {
+                                instance[name] = { emit: function(val) { console.log('[EventEmitter]', val); }, subscribe: function() {} };
+                                return;
+                            }
 
                             let val;
                             if (valExpr.startsWith("'") || valExpr.startsWith('"')) {
@@ -1732,7 +1790,13 @@ function runCode() {
                             params.forEach(param => {
                                 const parts = param.split(':').map(pt => pt.trim());
                                 if (parts.length > 0) {
-                                    const argName = parts[0].split(' ').pop();
+                                    let argName = parts[0].split(' ').pop();
+                                    argName = argName.replace(/^private\\s*|^public\\s*|^protected\\s*|^readonly\\s*/g, '').trim();
+                                    // Check service registry first
+                                    if (serviceRegistry[argName]) {
+                                        instance[argName] = serviceRegistry[argName];
+                                        return;
+                                    }
                                     if (argName === 'logger') {
                                         instance.logger = {
                                             log: function(msg) {
@@ -1771,23 +1835,40 @@ function runCode() {
                                     
                                     if (line.startsWith('this.')) {
                                         const statement = line.slice(5);
+                                        function extractFnArgs(s, fn) {
+                                            let p = s.indexOf(fn);
+                                            if (p === -1) return '';
+                                            p = s.indexOf('(', p) + 1;
+                                            let dp = 1, k = p, ins = false, sc = null;
+                                            while (k < s.length && dp > 0) {
+                                                const c = s[k];
+                                                if (ins) { if (c === sc && s[k-1] !== '\\\\') ins = false; }
+                                                else {
+                                                    if (c === '(') dp++;
+                                                    else if (c === ')') dp--;
+                                                    else if (c === "'" || c === '"' || c === '\`') { ins = true; sc = c; }
+                                                }
+                                                k++;
+                                            }
+                                            return s.substring(p, k - 1);
+                                        }
                                         if (statement.includes('.update(')) {
                                             const sigName = statement.split('.')[0];
-                                            const action = statement.match(/\\.update\\((.*?)\\)/)?.[1];
+                                            const action = extractFnArgs(statement, '.update(');
                                             if (instance[sigName] && instance[sigName].update) {
                                                 if (action.includes('+ 2')) instance[sigName].update(c => c + 2);
                                                 else if (action.includes('- 2')) instance[sigName].update(c => c - 2);
                                                 else if (action.includes('+ 1')) instance[sigName].update(c => c + 1);
                                                 else if (action.includes('- 1')) instance[sigName].update(c => c - 1);
                                                 else if (action.includes('[...')) {
-                                                    const itemMatch = action.match(/\\[\\.\\.\\.\\w+,\\s*(.*?)\\]/);
+                                                    const itemMatch = action.match(/\\[\\.\\.\\.\\w+,\\s*([^\\]]*)\\]/);
                                                     const itemVal = itemMatch ? itemMatch[1].replace(/['"\`]/g, '') : 'Angular Book';
                                                     instance[sigName].update(items => [...items, itemVal]);
                                                 }
                                             }
                                         } else if (statement.includes('.set(')) {
                                             const sigName = statement.split('.')[0];
-                                            const valStr = statement.match(/\\.set\\((.*?)\\)/)?.[1];
+                                            const valStr = extractFnArgs(statement, '.set(');
                                             if (instance[sigName] && instance[sigName].set) {
                                                 if (valStr === '[]') instance[sigName].set([]);
                                                 else instance[sigName].set(eval(valStr));
@@ -1806,11 +1887,11 @@ function runCode() {
                                                 instance[propName] = rawVal.replace(/['"\`]/g, '');
                                             }
                                         } else if (statement.includes('.log(')) {
-                                            const logMsg = statement.match(/\\.log\\((.*?)\\)/)?.[1];
+                                            const logMsg = extractFnArgs(statement, '.log(');
                                             if (instance.logger) instance.logger.log(eval(logMsg));
                                             else console.log(eval(logMsg));
                                         } else if (statement.startsWith('alert(')) {
-                                            const msg = statement.match(/alert\\((.*?)\\)/)?.[1];
+                                            const msg = extractFnArgs(statement, 'alert(');
                                             alert(eval(msg));
                                         }
                                     }
@@ -1910,7 +1991,7 @@ function runCode() {
 
                                     if (name.startsWith('(') && name.endsWith(')')) {
                                         const eventName = name.slice(1, -1);
-                                        const methodName = value.replace(/\\\\(\\\\)/g, '').trim();
+                                        const methodName = value.replace(/\\(\\)/g, '').trim();
                                         if (instance[methodName]) {
                                             element.addEventListener(eventName, (e) => {
                                                 e.preventDefault();
@@ -1949,6 +2030,16 @@ function runCode() {
                         }
 
                         render();
+                        // Test signal update mechanism
+                        if (instance.count) {
+                            console.log('Signal count initial:', instance.count());
+                            instance.count.set(42);
+                            console.log('Signal count after set(42):', instance.count());
+                        }
+                        console.log('Methods:', Object.keys(instance).filter(k => typeof instance[k] === 'function').join(', '));
+                        if (typeof instance.ngOnInit === 'function') {
+                            try { instance.ngOnInit(); } catch(e) { console.error('ngOnInit error:', e); }
+                        }
                         console.log("✔ Application compiled and initialized successfully.");
 
                     } catch (err) {
