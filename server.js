@@ -23,7 +23,6 @@ import {
   getBatchProgress,
   MAX_BULK_AUDIT_URLS,
   getReportStatus,
-  enqueueLeaderboardUpdate,
 } from './backend/jobs/queue.js';
 import './backend/jobs/worker.js'; // Initialize worker
 
@@ -893,21 +892,35 @@ async function handleApi(req, res, pathname) {
       const payload = await readJsonBody(req);
       const { repoUrl } = payload;
 
-      if (!repoUrl || !repoUrl.includes('github.com')) {
-        return sendJson(res, 400, { error: 'Please provide a valid GitHub repository URL.' });
+      if (
+        !repoUrl ||
+        (!repoUrl.includes('github.com') &&
+          !repoUrl.includes('gitlab.com') &&
+          !repoUrl.includes('bitbucket.org'))
+      ) {
+        return sendJson(res, 400, {
+          error: 'Please provide a valid GitHub, GitLab, or Bitbucket repository URL.',
+        });
       }
 
       const provider = VCSFactory.getProvider(repoUrl);
       const workflows = await provider.getNormalizedWorkflows();
 
       if (workflows.length === 0) {
+        let recommendation =
+          'No GitHub Actions workflows found in .github/workflows. Add a CI/CD pipeline to automate testing.';
+        if (repoUrl.includes('gitlab.com')) {
+          recommendation =
+            'No GitLab CI/CD configuration found (.gitlab-ci.yml). Add a CI/CD pipeline to automate testing.';
+        } else if (repoUrl.includes('bitbucket.org')) {
+          recommendation =
+            'No Bitbucket Pipelines configuration found (bitbucket-pipelines.yml). Add a CI/CD pipeline to automate testing.';
+        }
         return sendJson(res, 200, {
           score: 0,
           workflowsAnalyzed: 0,
           details: { hasDependencies: false, hasTests: false },
-          recommendations: [
-            'No GitHub Actions workflows found in .github/workflows. Add a CI/CD pipeline to automate testing.',
-          ],
+          recommendations: [recommendation],
         });
       }
 
@@ -2561,6 +2574,69 @@ async function handleApi(req, res, pathname) {
         res,
         sdlcAdvisorLimiter,
         'Too many profile requests. Please try again later.'
+      )
+    ) {
+      return;
+    }
+
+    let payload;
+    try {
+      payload = await readJsonBody(req);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON body.' });
+    }
+
+    const { codeA, codeB, inputSizes } = payload;
+
+    if (!codeA || !codeB) {
+      return sendJson(res, 400, { error: 'Both codeA and codeB are required' });
+    }
+
+    if (!inputSizes || !Array.isArray(inputSizes)) {
+      return sendJson(res, 400, { error: 'inputSizes is required and must be an array.' });
+    }
+
+    if (inputSizes.length > 8) {
+      return sendJson(res, 400, { error: 'cannot exceed 8 sizes' });
+    }
+
+    try {
+      const results = [];
+      for (const N of inputSizes) {
+        const resA = await _runInChild(codeA, N);
+        if (!resA.success) {
+          return sendJson(res, 400, { error: resA.error });
+        }
+
+        const resB = await _runInChild(codeB, N);
+        if (!resB.success) {
+          return sendJson(res, 400, { error: resB.error });
+        }
+
+        results.push({
+          inputSize: N,
+          timeA: resA.timeMs,
+          timeB: resB.timeMs,
+          memA: resA.memKb,
+          memB: resB.memKb,
+        });
+      }
+
+      return sendJson(res, 200, { success: true, results });
+    } catch (err) {
+      console.error('Complexity profiling error:', err);
+      return sendJson(res, 500, { error: 'Failed to profile code complexity.' });
+    }
+  }
+
+  // ── AI Code Reviewer ──────────────────────────────────────────────────────
+  if (pathname === '/api/ai/review' && req.method === 'POST') {
+    if (
+      !applyRateLimit(
+        req,
+        res,
+        sdlcAdvisorLimiter,
+        'Too many review requests. Please try again later.'
       )
     ) {
       return;
