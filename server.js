@@ -892,11 +892,25 @@ async function handleApi(req, res, pathname) {
       const payload = await readJsonBody(req);
       const { repoUrl } = payload;
 
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(repoUrl);
+      } catch {
+        return sendJson(res, 400, { error: 'Please provide a valid repository URL.' });
+      }
+
+      const validHostnames = [
+        'github.com',
+        'www.github.com',
+        'gitlab.com',
+        'www.gitlab.com',
+        'bitbucket.org',
+        'www.bitbucket.org',
+      ];
+
       if (
-        !repoUrl ||
-        (!repoUrl.includes('github.com') &&
-          !repoUrl.includes('gitlab.com') &&
-          !repoUrl.includes('bitbucket.org'))
+        !['http:', 'https:'].includes(parsedUrl.protocol) ||
+        !validHostnames.includes(parsedUrl.hostname.toLowerCase())
       ) {
         return sendJson(res, 400, {
           error: 'Please provide a valid GitHub, GitLab, or Bitbucket repository URL.',
