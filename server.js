@@ -2602,12 +2602,12 @@ async function handleApi(req, res, pathname) {
 
     const { codeA, codeB, inputSizes } = payload;
 
-    if (!codeA || !codeB) {
-      return sendJson(res, 400, { error: 'Both codeA and codeB are required' });
+    if (typeof codeA !== 'string' || typeof codeB !== 'string' || !codeA || !codeB) {
+      return sendJson(res, 400, { error: 'Both codeA and codeB are required and must be strings.' });
     }
 
-    if (!inputSizes || !Array.isArray(inputSizes)) {
-      return sendJson(res, 400, { error: 'inputSizes is required and must be an array.' });
+    if (!inputSizes || !Array.isArray(inputSizes) || !inputSizes.every(Number.isInteger)) {
+      return sendJson(res, 400, { error: 'inputSizes is required and must be an array of integers.' });
     }
 
     if (inputSizes.length > 8) {
