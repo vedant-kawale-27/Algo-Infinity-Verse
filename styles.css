@@ -8465,3 +8465,35 @@ html.light-mode .breadcrumb-bar:not(:empty) {
 .theme-option input[type='radio'] {
   accent-color: var(--accent);
 }
+
+/* ===== THEME TOGGLE: View Transition API — Outward Ripple ===== */
+html {
+  view-transition-name: root;
+}
+
+/* Keep the old snapshot fully visible while the new one peels in */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* New snapshot ripples outward from the click point */
+::view-transition-new(root) {
+  animation: theme-ripple 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes theme-ripple {
+  from {
+    clip-path: circle(0 at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--ripple-max-r, 141.4%) at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
