@@ -1,11 +1,5 @@
 import { renderBookmarkCollectionsPanel } from './bookmarkUI.js';
 
-let leaderboardRequestId = 0;
-const LEADERBOARD_LIMIT = 10;
-let currentLeaderboardPage = 1;
-let totalLeaderboardPages = 1;
-let totalLeaderboardUsers = 0;
-
 function initDashboard() {
   updateDashboard();
   if (typeof updateProfile === 'function') updateProfile();
@@ -70,7 +64,6 @@ function updateDashboard() {
   if (typeof renderInventoryDisplay === 'function') renderInventoryDisplay();
   updateRecentProblems();
   updateRecommendations();
-  updateLeaderboard();
   renderBookmarkCollectionsPanel();
   updateReviewQueueWidget();
 
@@ -400,141 +393,6 @@ function updateBadges() {
   }
 }
 
-function updateLeaderboard(page = 1) {
-  const leaderboardList = document.getElementById('leaderboardList');
-  if (!leaderboardList) return;
-
-  const requestId = ++leaderboardRequestId;
-  currentLeaderboardPage = page;
-
-  renderLeaderboardRows([], getCurrentUserId(), { emptyMessage: 'Loading leaderboard...' });
-  renderPaginationControls(true);
-
-  loadLeaderboard(page)
-    .then(({ leaders, currentUserId, total }) => {
-      if (requestId !== leaderboardRequestId) return;
-
-      const resolvedCurrentUserId = currentUserId || getCurrentUserId();
-      totalLeaderboardUsers = total || leaders.length;
-      totalLeaderboardPages = Math.ceil(totalLeaderboardUsers / LEADERBOARD_LIMIT);
-
-      renderLeaderboardRows(
-        buildLeaderboardRows(leaders, resolvedCurrentUserId),
-        resolvedCurrentUserId
-      );
-      renderPaginationControls(false);
-    })
-    .catch((error) => {
-      if (error.name === 'AbortError') return;
-      void 0;
-      if (requestId !== leaderboardRequestId) return;
-      renderLeaderboardRows([], getCurrentUserId(), { emptyMessage: 'Leaderboard unavailable.' });
-      renderPaginationControls(true, true);
-    });
-}
-
-async function loadLeaderboard(page = 1) {
-  const apiAbort = window.apiAbort;
-  const apiCache = window.apiCache;
-
-  if (location.protocol === 'file:') {
-    return { leaders: [], currentUserId: null, total: 0 };
-  }
-  if (!apiAbort || !apiCache) {
-    return { leaders: [], currentUserId: null, total: 0 };
-  }
-
-  const limit = LEADERBOARD_LIMIT;
-  const signal = apiAbort.getSignal('leaderboard');
-
-  try {
-    // /api/leaderboard paginates via `page`/`limit` and returns totals nested
-    // under `pagination.totalUsers` — it has no `skip` param or top-level
-    // `total` field (see #2539).
-    const response = await apiCache.fetchWithCache(
-      `/api/leaderboard?page=${page}&limit=${limit}`,
-      { credentials: 'include', signal },
-      300000,
-      'json'
-    );
-    return {
-      leaders: response.leaders || [],
-      currentUserId: response.currentUserId || null,
-      total: response.pagination?.totalUsers || 0,
-    };
-  } finally {
-    apiAbort.clearSignal('leaderboard');
-  }
-}
-
-function buildLeaderboardRows(leaders = [], currentUserId = getCurrentUserId()) {
-  const userProgress = window.userProgress || {};
-  const rowsById = new Map();
-
-  leaders.forEach((leader) => {
-    const normalized = normalizeLeaderboardEntry(leader);
-    if (normalized.id) rowsById.set(normalized.id, normalized);
-  });
-
-  const currentEntry = getCurrentLeaderboardEntry(currentUserId);
-  if (currentUserId !== 'local-user' || userProgress.xp > 350 || leaders.length === 0) {
-    rowsById.set(currentEntry.id, currentEntry);
-  }
-
-  const rankedRows = Array.from(rowsById.values())
-    .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name))
-    .map((leader, index) => ({ ...leader, rank: index + 1 }));
-
-  const visibleRows = rankedRows.slice(0, LEADERBOARD_LIMIT);
-
-  if (!visibleRows.some((leader) => leader.id === currentEntry.id)) {
-    const currentRow = rankedRows.find((leader) => leader.id === currentEntry.id);
-    if (currentRow) visibleRows[visibleRows.length - 1] = currentRow;
-  }
-
-  return visibleRows;
-}
-
-function normalizeLeaderboardEntry(entry) {
-  return {
-    id: String(entry.id || ''),
-    name: String(entry.name || 'Learner'),
-    xp: Math.max(0, Number(entry.xp) || 0),
-    level: Math.max(1, Number(entry.level) || 1),
-    avatar: String(entry.avatar || '🚀'),
-    rank: Number(entry.rank) || null,
-  };
-}
-
-function getCurrentLeaderboardEntry(currentUserId = getCurrentUserId()) {
-  const userProgress = window.userProgress || {};
-  return normalizeLeaderboardEntry({
-    id: currentUserId || 'local-user',
-    name: getCurrentDisplayName(),
-    xp: userProgress.xp,
-    level: userProgress.level,
-    avatar: userProgress.avatar,
-  });
-}
-
-function getCurrentUserId() {
-  return (
-    window.algoAuth?.user?.sub ||
-    window.algoAuth?.user?.id ||
-    (typeof cachedSession !== 'undefined' ? cachedSession?.user?.sub : null) ||
-    'local-user'
-  );
-}
-
-function getCurrentDisplayName() {
-  return (
-    window.algoAuth?.user?.name ||
-    (typeof cachedSession !== 'undefined' ? cachedSession?.user?.name : null) ||
-    (window.userProgress ? window.userProgress.name : null) ||
-    'Learner'
-  );
-}
-
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -545,128 +403,6 @@ function findProblemById(problems, id) {
   const targetId = String(id);
   return problems.find((problem) => String(problem.id) === targetId);
 }
-
-function getAvatarImageUrl(avatar) {
-  if (!avatar || typeof avatar !== 'string') return '';
-  if (
-    avatar.startsWith('http://') ||
-    avatar.startsWith('https://') ||
-    avatar.startsWith('data:image/')
-  ) {
-    return avatar;
-  }
-  if (avatar.startsWith('//')) return `https:${avatar}`;
-  if (/^[\w.-]+\.[a-z]{2,}\//i.test(avatar)) return `https://${avatar}`;
-  return '';
-}
-
-function renderLeaderboardRows(rows, currentUserId = getCurrentUserId(), options = {}) {
-  const leaderboardList = document.getElementById('leaderboardList');
-  if (!leaderboardList) return;
-
-  if (!rows.length) {
-    leaderboardList.innerHTML = `<p class="empty-state">${options.emptyMessage || 'No leaderboard data yet.'}</p>`;
-    return;
-  }
-
-  leaderboardList.innerHTML = rows
-    .map((user) => {
-      const isCurrentUser =
-        user.id === currentUserId || (currentUserId === 'local-user' && user.id === 'local-user');
-      const displayName = isCurrentUser ? `${user.name} (You)` : user.name;
-      let avatarHtml = escapeHtml(user.avatar);
-      const avatarUrl = getAvatarImageUrl(user.avatar);
-      if (avatarUrl) {
-        avatarHtml = `<img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy">`;
-      }
-      return `<div class="leaderboard-item ${isCurrentUser ? 'current-user' : ''}">
-            <span class="leader-rank">#${user.rank}</span>
-            <span class="leader-avatar" aria-hidden="true">${avatarHtml}</span>
-            <span class="leader-name">${escapeHtml(displayName)}</span>
-            <span class="leader-xp">${user.xp.toLocaleString()} XP</span>
-        </div>`;
-    })
-    .join('');
-}
-
-function renderPaginationControls(isLoading = false, hasError = false) {
-  const paginationContainer = document.getElementById('paginationContainer');
-  if (!paginationContainer) {
-    createPaginationContainer();
-  }
-
-  const container = document.getElementById('paginationContainer');
-  if (!container) return;
-
-  if (totalLeaderboardPages <= 1 && !isLoading) {
-    container.innerHTML = '';
-    return;
-  }
-
-  if (isLoading) {
-    container.innerHTML = `
-            <div class="pagination-controls">
-                <span class="pagination-info">Loading leaderboard...</span>
-            </div>
-        `;
-    return;
-  }
-
-  if (hasError) {
-    container.innerHTML = `
-            <div class="pagination-controls">
-                <span class="pagination-info error">Failed to load leaderboard</span>
-            </div>
-        `;
-    return;
-  }
-
-  const currentPage = currentLeaderboardPage;
-  const totalPages = totalLeaderboardPages;
-
-  let html = '<div class="pagination-controls">';
-
-  html += `
-        <button class="pagination-btn" onclick="goToLeaderboardPage(${currentPage - 1})" 
-            ${currentPage <= 1 ? 'disabled' : ''}>
-            <i class="fas fa-chevron-left"></i> Previous
-        </button>
-    `;
-
-  html += `<span class="pagination-info">Page ${currentPage} of ${totalPages}</span>`;
-
-  html += `
-        <button class="pagination-btn" onclick="goToLeaderboardPage(${currentPage + 1})" 
-            ${currentPage >= totalPages ? 'disabled' : ''}>
-            Next <i class="fas fa-chevron-right"></i>
-        </button>
-    `;
-
-  html += '</div>';
-  container.innerHTML = html;
-}
-
-function goToLeaderboardPage(page) {
-  if (page < 1 || page > totalLeaderboardPages) return;
-  if (page === currentLeaderboardPage) return;
-  updateLeaderboard(page);
-}
-
-function createPaginationContainer() {
-  const leaderboardList = document.getElementById('leaderboardList');
-  if (!leaderboardList) return;
-
-  const existingContainer = document.getElementById('paginationContainer');
-  if (existingContainer) return;
-
-  const container = document.createElement('div');
-  container.id = 'paginationContainer';
-  container.className = 'pagination-container';
-  leaderboardList.parentNode.insertBefore(container, leaderboardList.nextSibling);
-}
-
-window.updateLeaderboard = updateLeaderboard;
-window.goToLeaderboardPage = goToLeaderboardPage;
 
 function getActivityLevel(count) {
   if (!count || count === 0) return 0;
@@ -835,9 +571,7 @@ function updateReviewQueueWidget() {
 export {
   initDashboard,
   updateDashboard,
-  updateLeaderboard,
   updateBadges,
   updateFreezeHistoryList,
   renderActivityHeatmap,
-  goToLeaderboardPage,
 };

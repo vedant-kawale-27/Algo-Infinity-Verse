@@ -2792,8 +2792,26 @@ CRITICAL RULES:
   // ── Leaderboard ──────────────────────────────────────────────────────────
   if (pathname === '/api/leaderboard' && req.method === 'GET') {
     try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const parsedPage = parseInt(url.searchParams.get('page'), 10);
+      const page = Number.isNaN(parsedPage) ? 1 : Math.max(parsedPage, 1);
+      const parsedLimit = parseInt(url.searchParams.get('limit'), 10);
+      const limit = Number.isNaN(parsedLimit) ? 10 : Math.min(Math.max(parsedLimit, 1), 50);
+      const period = url.searchParams.get('period') || 'all';
+      const offset = (page - 1) * limit;
+
+      const now = Date.now();
       const users = await readUsers();
-      const leaders = users
+      const allLeaders = users
+        .filter((u) => {
+          if (period === 'all') return true;
+          const ts = u.progressUpdatedAt || u.updatedAt || u.createdAt;
+          if (!ts) return false;
+          const elapsed = now - new Date(ts).getTime();
+          if (period === 'week') return elapsed <= 7 * 24 * 60 * 60 * 1000;
+          if (period === 'month') return elapsed <= 30 * 24 * 60 * 60 * 1000;
+          return true;
+        })
         .map((u) => ({
           id: u.id || u.email,
           name: u.name || 'Learner',
@@ -2801,14 +2819,30 @@ CRITICAL RULES:
           level: u.level || 1,
           avatar: u.avatar || '🚀',
         }))
-        .sort((a, b) => b.xp - a.xp)
-        .slice(0, 50);
+        .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name))
+        .map((u, index) => ({ ...u, rank: index + 1 }));
+
+      const totalUsers = allLeaders.length;
+      const totalPages = Math.ceil(totalUsers / limit);
+      const paginatedUsers = allLeaders.slice(offset, offset + limit);
 
       const session = getSession(req);
-      return sendJson(res, 200, { leaders, currentUserId: session?.sub || null });
+      return sendJson(res, 200, {
+        leaders: paginatedUsers,
+        currentUserId: session?.sub || null,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalUsers,
+          pageSize: limit,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+        period,
+      });
     } catch (err) {
       console.error('Leaderboard error:', err);
-      return sendJson(res, 200, { leaders: [], currentUserId: null });
+      return sendJson(res, 200, { leaders: [], currentUserId: null, pagination: { totalUsers: 0, totalPages: 1 } });
     }
   }
 
@@ -2890,6 +2924,10 @@ function resolveStaticPath(pathname) {
     '/practice.html': 'pages/practice/problems.html',
     '/support-page': 'support-page/index.html',
     '/support-page/': 'support-page/index.html',
+    '/leaderboard': 'pages/leaderboard/leaderboard.html',
+    '/leaderboard.html': 'pages/leaderboard/leaderboard.html',
+    '/leaderboard/preview': 'pages/leaderboard/preview.html',
+    '/leaderboard/preview.html': 'pages/leaderboard/preview.html',
   };
   let mapped = routes[pathname];
   if (!mapped) {
