@@ -8583,13 +8583,19 @@ html {
 
 /* Keep the old snapshot fully visible while the new one peels in */
 ::view-transition-old(root) {
-  animation: none;
-  mix-blend-mode: normal;
+  animation: theme-ripple-fade-in 800ms both !important;
+  mix-blend-mode: normal !important;
+}
+
+@keyframes theme-ripple-fade-in {
+  from { opacity: 1; }
+  to { opacity: 1; }
 }
 
 /* New snapshot ripples outward from the click point */
 ::view-transition-new(root) {
-  animation: theme-ripple 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: theme-ripple 800ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  mix-blend-mode: normal !important;
 }
 
 @keyframes theme-ripple {
