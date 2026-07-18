@@ -227,12 +227,7 @@
     }
 
     /* ── Legacy overlay fallback ── */
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      applyTheme();
-      return;
-    }
-
-    const oldColor = isLight ? '`#ffffff`' : '`#0a0a1a`';
+    const oldColor = isLight ? '#ffffff' : '#0a0a1a';
     applyTheme();
 
     /* overlay = OLD theme color, masks the new theme while it exists */
