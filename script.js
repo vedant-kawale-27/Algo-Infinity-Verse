@@ -2149,19 +2149,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // New Topic Quiz Modal close handlers
-  const topicQuizCloseBtn = document.getElementById('topicQuizModalClose');
-  if (topicQuizCloseBtn) {
-    topicQuizCloseBtn.addEventListener('click', closeQuizModal);
-  }
-
-  const topicQuizModal = document.getElementById('quizModal');
-  if (topicQuizModal) {
-    topicQuizModal.addEventListener('click', (e) => {
-      if (e.target === topicQuizModal) {
-        closeQuizModal();
-      }
-    });
-  }
+  // Topic quiz modal is now a full page at /pages/topic-quiz/topic-quiz.html
+  // Legacy modal listeners removed.
 });
 
 // ===== LOADING SCREEN =====
@@ -2301,6 +2290,7 @@ function initNavbar() {
       if (navLinks.classList.contains('active')) {
         toggleMenu(false);
       }
+    } else {
       document.querySelectorAll('.has-dropdown.open').forEach((el) => {
         el.classList.remove('open');
       });
@@ -3519,7 +3509,6 @@ function updateDashboard() {
   if (typeof updateFreezeHistoryList === 'function') updateFreezeHistoryList();
   updateBadges();
   updateRecentProblems();
-  updateLeaderboard();
   renderRevisionSchedulerCard();
   const grid = document.querySelector('.dashboard-grid');
   if (grid && !document.getElementById('personalityCard')) {
@@ -3625,74 +3614,92 @@ function updateBadges() {
   const badges = [
     {
       id: 1,
-      icon: '🌟',
+      icon: '<i class="fas fa-star"></i>',
       name: 'First Steps',
       description: 'Begin your journey',
       criteria: 'Solve 1 problem',
+      color: '#f59e0b',
+      anim: 'badge-hover-spin',
       earned: userProgress.completedProblems.length >= 1,
     },
     {
       id: 2,
-      icon: '🔥',
+      icon: '<i class="fas fa-fire"></i>',
       name: 'On Fire',
       description: 'Keep the momentum going',
       criteria: 'Maintain a 7-day streak',
+      color: '#ef4444',
+      anim: 'badge-hover-pulse',
       earned: userProgress.streak >= 7,
     },
     {
       id: 3,
-      icon: '💎',
+      icon: '<i class="fas fa-gem"></i>',
       name: 'Diamond',
       description: 'Reach a major XP milestone',
       criteria: 'Earn 5,000 XP',
+      color: '#8b5cf6',
+      anim: 'badge-hover-float',
       earned: userProgress.xp >= 5000,
     },
     {
       id: 4,
-      icon: '🚀',
+      icon: '<i class="fas fa-rocket"></i>',
       name: 'Rocket',
       description: 'Speed through problems',
       criteria: 'Solve 50 problems',
+      color: '#06b6d4',
+      anim: 'badge-hover-bounce',
       earned: userProgress.completedProblems.length >= 50,
     },
     {
       id: 5,
-      icon: '👑',
+      icon: '<i class="fas fa-crown"></i>',
       name: 'Master',
       description: 'Achieve expert problem-solving',
       criteria: 'Solve 100 problems',
+      color: '#ec4899',
+      anim: 'badge-hover-glow',
       earned: userProgress.completedProblems.length >= 100,
     },
     {
       id: 6,
-      icon: '🎯',
+      icon: '<i class="fas fa-bullseye"></i>',
       name: 'Sharpshooter',
       description: 'Hit the target with consistency',
       criteria: 'Solve 25 problems and earn 2,500 XP',
+      color: '#10b981',
+      anim: 'badge-hover-wobble',
       earned: userProgress.completedProblems.length >= 25 && userProgress.xp >= 2500,
     },
     {
       id: 7,
-      icon: '⚔️',
+      icon: '<i class="fas fa-shield-alt"></i>',
       name: 'Gladiator',
       description: 'Win your first coding battle',
       criteria: 'Win 1 battle',
+      color: '#f97316',
+      anim: 'badge-hover-shake',
       earned: (userProgress.battlesWon || 0) >= 1,
     },
     {
       id: 8,
-      icon: '⚡',
+      icon: '<i class="fas fa-bolt"></i>',
       name: 'Speed Demon',
       description: 'Become a battle master',
       criteria: 'Win 5 battles',
+      color: '#a855f7',
+      anim: 'badge-hover-flash',
       earned: (userProgress.battlesWon || 0) >= 5,
     },
     {
       id: 9,
-      icon: '<i class="fas fa-gem" style="font-size:1.1rem"></i>',
+      icon: '<i class="fas fa-trophy"></i>',
       name: 'Exclusive',
       description: 'A mark of true dedication',
       criteria: 'Purchased from the XP Store',
+      color: '#f59e0b',
+      anim: 'badge-hover-grow',
       earned: !!userProgress.inventory?.exclusiveBadge,
     },
   ];
@@ -3705,135 +3712,18 @@ function updateBadges() {
     container.innerHTML = badges
       .map(
         (badge) =>
-          `<div class="badge ${badge.earned ? '' : 'locked'}" tabindex="0"><span class="badge-tooltip"><strong>${badge.name}</strong><span>${badge.description}</span><span>${badge.criteria}</span></span>${badge.icon}</div>`
+          `<div class="badge ${badge.earned ? badge.anim : 'locked'}" tabindex="0" style="${badge.earned ? `background:${badge.color};box-shadow:0 4px 14px ${badge.color}40` : ''}"><span class="badge-tooltip"><strong>${badge.name}</strong><span>${badge.description}</span><span>${badge.criteria}</span></span>${badge.icon}</div>`
       )
       .join('');
   if (grid)
     grid.innerHTML = badges
       .map(
         (badge) =>
-          `<div class="badge-lg ${badge.earned ? '' : 'locked'}" tabindex="0"><span class="badge-tooltip"><strong>${badge.name}</strong><span>${badge.description}</span><span>${badge.criteria}</span></span>${badge.icon}</div>`
+          `<div class="badge-lg ${badge.earned ? badge.anim : 'locked'}" tabindex="0" style="${badge.earned ? `background:${badge.color};box-shadow:0 4px 14px ${badge.color}40` : ''}"><span class="badge-tooltip"><strong>${badge.name}</strong><span>${badge.description}</span><span>${badge.criteria}</span></span>${badge.icon}</div>`
       )
       .join('');
-}
-
-// ============================================
-// LEADERBOARD
-// ============================================
-let leaderboardRequestId = 0;
-const LEADERBOARD_LIMIT = 10;
-
-function updateLeaderboard() {
-  const leaderboardList = document.getElementById('leaderboardList');
-  if (!leaderboardList) return;
-  const requestId = ++leaderboardRequestId;
-  renderLeaderboardRows(buildLeaderboardRows([], getCurrentUserId()), getCurrentUserId(), {
-    emptyMessage: 'Loading leaderboard...',
-  });
-  loadLeaderboard()
-    .then(({ leaders, currentUserId }) => {
-      if (requestId !== leaderboardRequestId) return;
-      const resolvedCurrentUserId = currentUserId || getCurrentUserId();
-      renderLeaderboardRows(
-        buildLeaderboardRows(leaders, resolvedCurrentUserId),
-        resolvedCurrentUserId
-      );
-    })
-    .catch((error) => {
-      if (error.name === 'AbortError') return;
-      console.warn('Could not load leaderboard:', error);
-      if (requestId !== leaderboardRequestId) return;
-      renderLeaderboardRows(buildLeaderboardRows([], getCurrentUserId()), getCurrentUserId(), {
-        emptyMessage: 'Leaderboard unavailable.',
-      });
-    });
-}
-
-async function loadLeaderboard() {
-  if (location.protocol === 'file:') return { leaders: [], currentUserId: null };
-  const signal = apiAbort.getSignal('leaderboard');
-  try {
-    // Cache leaderboard data for 5 minutes (300000 ms) with stale-while-revalidate
-    return await apiCache.fetchWithCache(
-      '/api/leaderboard',
-      { credentials: 'include', signal },
-      300000,
-      'json'
-    );
-  } finally {
-    apiAbort.clearSignal('leaderboard');
-  }
-}
-
-function buildLeaderboardRows(leaders = [], currentUserId = getCurrentUserId()) {
-  const rowsById = new Map();
-  leaders.forEach((leader) => {
-    const normalized = normalizeLeaderboardEntry(leader);
-    if (normalized.id) rowsById.set(normalized.id, normalized);
-  });
-  const currentEntry = getCurrentLeaderboardEntry(currentUserId);
-  if (currentUserId !== 'local-user' || userProgress.xp > 350 || leaders.length === 0)
-    rowsById.set(currentEntry.id, currentEntry);
-  const rankedRows = Array.from(rowsById.values())
-    .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name))
-    .map((leader, index) => ({ ...leader, rank: index + 1 }));
-  const visibleRows = rankedRows.slice(0, LEADERBOARD_LIMIT);
-  if (!visibleRows.some((leader) => leader.id === currentEntry.id)) {
-    const currentRow = rankedRows.find((leader) => leader.id === currentEntry.id);
-    if (currentRow) visibleRows[visibleRows.length - 1] = currentRow;
-  }
-  return visibleRows;
-}
-
-function normalizeLeaderboardEntry(entry) {
-  return {
-    id: String(entry.id || ''),
-    name: String(entry.name || 'Learner'),
-    xp: Math.max(0, Number(entry.xp) || 0),
-    level: Math.max(1, Number(entry.level) || 1),
-    avatar: String(entry.avatar || '🚀'),
-    rank: Number(entry.rank) || null,
-  };
-}
-
-function getCurrentLeaderboardEntry(currentUserId = getCurrentUserId()) {
-  return normalizeLeaderboardEntry({
-    id: currentUserId || 'local-user',
-    name: getCurrentDisplayName(),
-    xp: userProgress.xp,
-    level: userProgress.level,
-    avatar: userProgress.avatar,
-  });
-}
-
-function getCurrentUserId() {
-  return (
-    window.algoAuth?.user?.sub ||
-    window.algoAuth?.user?.id ||
-    cachedSession?.user?.sub ||
-    'local-user'
-  );
-}
-
-function getCurrentDisplayName() {
-  return window.algoAuth?.user?.name || cachedSession?.user?.name || userProgress.name || 'Learner';
-}
-
-function renderLeaderboardRows(rows, currentUserId = getCurrentUserId(), options = {}) {
-  const leaderboardList = document.getElementById('leaderboardList');
-  if (!leaderboardList) return;
-  if (!rows.length) {
-    leaderboardList.innerHTML = `<p class="empty-state">${options.emptyMessage || 'No leaderboard data yet.'}</p>`;
-    return;
-  }
-  leaderboardList.innerHTML = rows
-    .map((user) => {
-      const isCurrentUser =
-        user.id === currentUserId || (currentUserId === 'local-user' && user.id === 'local-user');
-      const displayName = isCurrentUser ? `${user.name} (You)` : user.name;
-      return `<div class="leaderboard-item ${isCurrentUser ? 'current-user' : ''}"><span class="leader-rank">#${user.rank}</span><span class="leader-avatar" aria-hidden="true">${escapeHtml(user.avatar)}</span><span class="leader-name">${escapeHtml(displayName)}</span><span class="leader-xp">${user.xp.toLocaleString()} XP</span></div>`;
-    })
-    .join('');
+  const earnedEl = document.getElementById('badgesEarnedCount');
+  if (earnedEl) earnedEl.textContent = `${earned.length} / ${badges.length} earned`;
 }
 
 // ============================================
@@ -4252,7 +4142,6 @@ async function syncUserProgress() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    updateLeaderboard();
   } catch (e) {
     void 0;
   }
@@ -5018,7 +4907,6 @@ window.addEventListener('online', async () => {
         }
       }
       await window.StorageDB.set(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue', []);
-      if (typeof updateLeaderboard === 'function') updateLeaderboard();
     }
   }
 });
