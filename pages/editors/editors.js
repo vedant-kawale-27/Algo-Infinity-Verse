@@ -131,12 +131,20 @@ const editors = [
     desc: 'Explore functional programming paradigms, list operations, recursion, and powerful macro metaprogramming in Common Lisp.',
   },
   {
+    name: 'Groovy Editor',
+    path: '/pages/editors/groovy-editor/groovy-editor.html',
+    category: 'JVM & Functional',
+    icon: 'fa-feather-pointed',
+    desc: 'Write Groovy scripts, Gradle build configurations, closures, dynamic metaprogramming, and JVM code.',
+  },
+  {
     name: 'F# Playground',
     path: '/pages/editors/fsharp-playground/fsharp-playground.html',
     category: 'JVM & Functional',
     icon: 'fa-code-branch',
-    desc: 'Write F# with live syntax highlighting, functional pipeline operators, pattern matching, discriminated unions, and execution.'}
-  ,{
+    desc: 'Write F# with live syntax highlighting, functional pipeline operators, pattern matching, discriminated unions, and execution.'
+  },
+  {
     name: 'Prolog Playground',
     path: '/pages/editors/prolog-playground/prolog-playground.html',
     category: 'JVM & Functional',
