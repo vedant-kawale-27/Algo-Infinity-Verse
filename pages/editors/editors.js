@@ -63,6 +63,14 @@ const editors = [
     desc: 'Write React components with JSX, render them instantly in the preview panel. No setup, no installs.',
   },
 
+  {
+    name: 'TypeScript Playground',
+    path: '/pages/editors/typescript-playground/typescript-playground.html',
+    category: 'Web Technologies',
+    icon: 'fa-code',
+    desc: 'Write multi-file TypeScript with real type checking, live diagnostics, and auto-completion powered by the TypeScript language service.',
+  },
+
   // ── Scripting Languages ──
   {
     name: 'Ruby Editor',
