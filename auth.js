@@ -149,6 +149,18 @@
     }
   }
 
+  function syncAuthVisibility() {
+    const isAuth = currentSession?.authenticated;
+
+    document.querySelectorAll('[data-guest-only]').forEach((el) => {
+      el.style.display = isAuth ? 'none' : '';
+    });
+
+    document.querySelectorAll('[data-auth-required]').forEach((el) => {
+      el.style.display = isAuth ? '' : 'none';
+    });
+  }
+
   function wireLogout() {
     document.addEventListener('click', async (event) => {
       const logoutButton = event.target.closest('[data-auth-logout]');
@@ -198,6 +210,7 @@
           document.documentElement.classList.remove('auth-unverified', 'auth-loading');
           document.documentElement.classList.add('auth-verified');
           renderAuthNav();
+          syncAuthVisibility();
           updateProfileNames(currentSession.user);
           location.href = getNextDestination();
         } else {
@@ -418,6 +431,7 @@
       window.algoAuth = currentSession;
 
       renderAuthNav();
+      syncAuthVisibility();
       wireLogout();
       wireAuthForm();
       wireDeactivateAccount();
@@ -452,6 +466,7 @@
     }
 
     renderAuthNav();
+    syncAuthVisibility();
     wireLogout();
     wireGuestButton();
     wireAuthForm();
@@ -462,6 +477,18 @@
 
     window.addEventListener('hashchange', guardPrivateHash);
     guardPrivateHash();
+  });
+
+  // Partials (profile section with action buttons) load AFTER DOMContentLoaded,
+  // so re-wire once they're available.
+  // Use a flag to prevent duplicate listeners from repeated wiring calls.
+  let _wired = false;
+  document.addEventListener('partialsLoaded', () => {
+    if (_wired) return;
+    _wired = true;
+    wireDeactivateAccount();
+    wireChangePassword();
+    wireDeleteAccount();
   });
 })();
 
@@ -633,7 +660,12 @@ function showDeactivateAccountModal() {
   });
 }
 
+let _deactWired = false;
+
 function wireDeactivateAccount() {
+  if (_deactWired) return;
+  _deactWired = true;
+
   const btn = document.getElementById('deactivateAccountBtn');
 
   if (!btn) return;
@@ -671,19 +703,25 @@ function wireDeactivateAccount() {
   });
 }
 
+let _delWired = false;
+
 function wireDeleteAccount() {
+  if (_delWired) return;
+  _delWired = true;
+
   const btn = document.getElementById('deleteAccountBtn');
 
   if (!btn) return;
 
   btn.addEventListener('click', async () => {
-    const { confirmed, password } = await showAccountActionModal({
-      title: 'Delete Account',
-      message:
-        'This will permanently delete your account and all associated data. This action cannot be undone. Enter your password to confirm.',
-      confirmText: 'Delete Account',
-      requirePassword: true,
-    });
+    if (!window.algoAuth?.authenticated) {
+      if (window.authGate) {
+        window.authGate.open('Please log in to delete your account.', 'login');
+      }
+      return;
+    }
+
+    const { confirmed, password } = await showDeleteAccountModal();
 
     if (!confirmed) return;
     if (!password) return;
@@ -722,6 +760,80 @@ function wireDeleteAccount() {
   });
 }
 
+function showDeleteAccountModal() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const modal = document.getElementById('deleteAccountModal');
+
+    if (!modal) {
+      resolve({ confirmed: false, password: null });
+      return;
+    }
+
+    const closeBtn = document.getElementById('deleteAccountModalClose');
+    const cancelBtn = document.getElementById('deleteAccountCancel');
+    const confirmBtn = document.getElementById('deleteAccountConfirm');
+    const passwordInput = document.getElementById('deleteAccountPassword');
+    const passwordError = document.getElementById('deleteAccountPasswordError');
+    const passwordToggle = modal.querySelector('.password-toggle');
+
+    passwordInput.value = '';
+    passwordError.textContent = '';
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Delete Account';
+
+    function onToggle() {
+      passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+      passwordToggle.innerHTML =
+        passwordInput.type === 'password'
+          ? '<i class="fas fa-eye"></i>'
+          : '<i class="fas fa-eye-slash"></i>';
+    }
+
+    passwordToggle.addEventListener('click', onToggle);
+
+    function settle(result) {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKeydown);
+      modal.removeEventListener('click', onOverlayClick);
+      passwordToggle.removeEventListener('click', onToggle);
+      modal.classList.remove('active');
+      resolve(result);
+    }
+
+    function onOverlayClick(e) {
+      if (e.target === modal) settle({ confirmed: false, password: null });
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Escape') settle({ confirmed: false, password: null });
+    }
+
+    document.addEventListener('keydown', onKeydown);
+
+    modal.addEventListener('click', onOverlayClick);
+
+    closeBtn.addEventListener('click', () => settle({ confirmed: false, password: null }));
+    cancelBtn.addEventListener('click', () => settle({ confirmed: false, password: null }));
+
+    confirmBtn.addEventListener('click', () => {
+      const password = passwordInput.value;
+
+      if (!password) {
+        passwordError.textContent = 'Password is required.';
+        passwordInput.focus();
+        return;
+      }
+
+      settle({ confirmed: true, password });
+    });
+
+    modal.classList.add('active');
+    setTimeout(() => passwordInput.focus(), 100);
+  });
+}
+
 function passwordStrength(password) {
   let score = 0;
 
@@ -734,10 +846,16 @@ function passwordStrength(password) {
   return score;
 }
 
+let _cpwWired = false;
+
 function wireChangePassword() {
+  // Guard: already fully wired (prevents duplicate listeners from partialsLoaded retry)
+  if (_cpwWired) return;
+  _cpwWired = true;
+
   // ── Toggle password visibility (delegated — works even when partial loads late) ──
   document.addEventListener('click', (e) => {
-    const toggle = e.target.closest('.cpw-toggle');
+    const toggle = e.target.closest('.cpw-toggle, .password-toggle');
     if (!toggle) return;
     const input = document.getElementById(toggle.dataset.target);
     if (!input) return;
@@ -746,6 +864,10 @@ function wireChangePassword() {
     toggle.innerHTML = wasPassword
       ? '<i class="fas fa-eye-slash"></i>'
       : '<i class="fas fa-eye"></i>';
+    if (toggle.classList.contains('password-toggle')) {
+      toggle.setAttribute('aria-pressed', String(wasPassword));
+      toggle.setAttribute('aria-label', wasPassword ? 'Hide password' : 'Show password');
+    }
   });
 
   // ── DOM refs ──

@@ -526,6 +526,11 @@
           <option value="python">Python</option>
           <option value="java">Java</option>
           <option value="cpp">C++</option>
+          <option value="lisp">Common Lisp</option>
+          <option value="groovy">Groovy</option>
+          <option value="vbnet">VB.NET</option>
+          <option value="fsharp">F#</option>
+          <option value="prolog">Prolog</option>
         </select>
         <button type="button" id="runBtn" aria-label="Run code">▶ Run</button>
         <button type="button" id="profileBtn" aria-label="Profile time complexity">
@@ -569,6 +574,11 @@
         python: `def solve(input):\n    print(input)\n    return input`,
         java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello");\n    }\n}`,
         cpp: `#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Hello" << endl;\n    return 0;\n}`,
+        lisp: `(defun solve ()\n  (format t "Hello, World!~%")\n  t)\n\n(solve)`,
+        groovy: `// Groovy Code Playground\ndef solve(input) {\n    println "Input: \${input}"\n    return input\n}\n\nsolve("Hello from Groovy")`,
+        vbnet: `' VB.NET Code Playground\nImports System\n\nModule Program\n    Sub Main()\n        Console.WriteLine("Hello from VB.NET")\n    End Sub\nEnd Module`,
+        fsharp: `// F# Code Playground\nlet solve input =\n    printfn "%A" input\n    input\n\n[<EntryPoint>]\nlet main argv =\n    solve "Hello from F#"\n    0`,
+        prolog: `% Prolog Code Playground\nparent(john, bob).\nparent(bob, charlie).\nancestor(X, Y) :- parent(X, Y).\nancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).`,
       };
 
       let editor;
@@ -617,7 +627,17 @@
       loadEditor();
 
       document.getElementById('lang').addEventListener('change', function () {
-        const modeMap = { javascript: 'javascript', python: 'python', java: 'java', cpp: 'cpp' };
+        const modeMap = {
+          javascript: 'javascript',
+          python: 'python',
+          java: 'java',
+          cpp: 'cpp',
+          lisp: 'lisp',
+          groovy: 'groovy',
+          vbnet: 'vb',
+          fsharp: 'fsharp',
+          prolog: 'prolog',
+        };
         const lang = modeMap[this.value];
         if (editor && monacoInstance) {
           const model = editor.getModel();

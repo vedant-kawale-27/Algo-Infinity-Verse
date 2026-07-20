@@ -39,6 +39,13 @@ const editors = [
     icon: 'fa-js',
     desc: 'Run JavaScript in a sandboxed environment with sample tests, debug transcripts, and hidden test cases.',
   },
+  {
+    name: 'VB.NET Editor',
+    path: '/pages/editors/vbnet-editor/vbnet-editor.html',
+    category: 'Mainstream Languages',
+    icon: 'fa-cubes',
+    desc: 'Write Visual Basic .NET code with live syntax highlighting, Module and Class templates, LINQ queries, and execution.',
+  },
 
   // ── Web Technologies ──
   {
@@ -61,6 +68,14 @@ const editors = [
     category: 'Web Technologies',
     icon: 'fa-react',
     desc: 'Write React components with JSX, render them instantly in the preview panel. No setup, no installs.',
+  },
+
+  {
+    name: 'TypeScript Playground',
+    path: '/pages/editors/typescript-playground/typescript-playground.html',
+    category: 'Web Technologies',
+    icon: 'fa-code',
+    desc: 'Write multi-file TypeScript with real type checking, live diagnostics, and auto-completion powered by the TypeScript language service.',
   },
 
   // ── Scripting Languages ──
@@ -107,6 +122,34 @@ const editors = [
     category: 'JVM & Functional',
     icon: 'fa-hashtag',
     desc: 'Write Haskell with a file explorer, syntax highlighting, and support for recursion, modules, and ADTs.',
+  },
+  {
+    name: 'Lisp Playground',
+    path: '/pages/editors/lisp-playground/lisp-playground.html',
+    category: 'JVM & Functional',
+    icon: 'fa-terminal',
+    desc: 'Explore functional programming paradigms, list operations, recursion, and powerful macro metaprogramming in Common Lisp.',
+  },
+  {
+    name: 'Groovy Editor',
+    path: '/pages/editors/groovy-editor/groovy-editor.html',
+    category: 'JVM & Functional',
+    icon: 'fa-feather-pointed',
+    desc: 'Write Groovy scripts, Gradle build configurations, closures, dynamic metaprogramming, and JVM code.',
+  },
+  {
+    name: 'F# Playground',
+    path: '/pages/editors/fsharp-playground/fsharp-playground.html',
+    category: 'JVM & Functional',
+    icon: 'fa-code-branch',
+    desc: 'Write F# with live syntax highlighting, functional pipeline operators, pattern matching, discriminated unions, and execution.'
+  },
+  {
+    name: 'Prolog Playground',
+    path: '/pages/editors/prolog-playground/prolog-playground.html',
+    category: 'JVM & Functional',
+    icon: 'fa-diagram-project',
+    desc: 'Explore logic programming, facts, rules, unification, backtracking, and recursive predicates in Prolog.',
   },
 
   // ── Systems & Special ──
