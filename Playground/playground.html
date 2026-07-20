@@ -18,6 +18,9 @@
     <!-- TypeScript Compiler -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.8.2/typescript.min.js"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <!-- Ace Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.0/ace.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.0/ext-language_tools.js"></script>
@@ -91,6 +94,26 @@
               <i class="fas fa-play"></i>
               Run
             </button>
+            <button
+              type="button"
+              id="profileBtn"
+              class="btn-profile"
+              style="
+                background: linear-gradient(135deg, #3b82f6, #60a5fa);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+              "
+            >
+              <i class="fas fa-chart-line"></i>
+              Profile Complexity
+            </button>
             <button type="button" id="clearBtn" class="btn-clear">
               <i class="fas fa-trash"></i>
               Clear
@@ -99,6 +122,219 @@
               <i class="fas fa-rotate"></i>
               Reset
             </button>
+          </div>
+        </div>
+
+        <!-- Profiler Modal -->
+        <div
+          id="profilerModal"
+          class="profiler-modal"
+          style="
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+          "
+        >
+          <div
+            class="profiler-content"
+            style="
+              background: var(--card-bg, #111827);
+              padding: 25px;
+              border-radius: 16px;
+              max-width: 650px;
+              width: 95%;
+              border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+              color: var(--text-color, #fff);
+            "
+          >
+            <div
+              class="profiler-header"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+              "
+            >
+              <h2 style="margin: 0; font-size: 1.5em">📈 Time Complexity Profiler</h2>
+              <button
+                class="profiler-close"
+                id="closeProfilerBtn"
+                aria-label="Close Profiler"
+                style="
+                  background: none;
+                  border: none;
+                  font-size: 1.5em;
+                  cursor: pointer;
+                  color: var(--text-muted, #94a3b8);
+                "
+              >
+                &times;
+              </button>
+            </div>
+            <div
+              class="profiler-stats"
+              style="
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-bottom: 20px;
+              "
+            >
+              <div
+                class="stat-box"
+                style="
+                  background: rgba(255, 255, 255, 0.03);
+                  padding: 12px;
+                  border-radius: 8px;
+                  text-align: center;
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                "
+              >
+                <div
+                  class="label"
+                  style="
+                    font-size: 0.8em;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                  "
+                >
+                  Estimated Complexity
+                </div>
+                <div
+                  class="value"
+                  id="profComplexity"
+                  style="font-size: 1.4em; font-weight: 700; margin-top: 4px"
+                >
+                  O(?)
+                </div>
+              </div>
+              <div
+                class="stat-box"
+                style="
+                  background: rgba(255, 255, 255, 0.03);
+                  padding: 12px;
+                  border-radius: 8px;
+                  text-align: center;
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                "
+              >
+                <div
+                  class="label"
+                  style="
+                    font-size: 0.8em;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                  "
+                >
+                  Average Time
+                </div>
+                <div
+                  class="value"
+                  id="profAvgTime"
+                  style="font-size: 1.4em; font-weight: 700; margin-top: 4px"
+                >
+                  - ms
+                </div>
+              </div>
+              <div
+                class="stat-box"
+                style="
+                  background: rgba(255, 255, 255, 0.03);
+                  padding: 12px;
+                  border-radius: 8px;
+                  text-align: center;
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                "
+              >
+                <div
+                  class="label"
+                  style="
+                    font-size: 0.8em;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                  "
+                >
+                  Fastest Run (N=10)
+                </div>
+                <div
+                  class="value"
+                  id="profFastest"
+                  style="font-size: 1.4em; font-weight: 700; margin-top: 4px"
+                >
+                  - ms
+                </div>
+              </div>
+              <div
+                class="stat-box"
+                style="
+                  background: rgba(255, 255, 255, 0.03);
+                  padding: 12px;
+                  border-radius: 8px;
+                  text-align: center;
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                "
+              >
+                <div
+                  class="label"
+                  style="
+                    font-size: 0.8em;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                  "
+                >
+                  Slowest Run (N=5000)
+                </div>
+                <div
+                  class="value"
+                  id="profSlowest"
+                  style="font-size: 1.4em; font-weight: 700; margin-top: 4px"
+                >
+                  - ms
+                </div>
+              </div>
+            </div>
+            <div
+              class="chart-container"
+              style="position: relative; height: 300px; margin-bottom: 15px"
+            >
+              <canvas id="profilerChart"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <span id="profilerStatus" style="font-size: 0.85rem; color: #94a3b8"
+                >Execution benchmark datasets: N = 10, 100, 1000, 5000</span
+              >
+              <button
+                id="rerunProfileBtn"
+                class="btn-profile"
+                style="
+                  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+                  color: white;
+                  border: none;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                "
+              >
+                <i class="fas fa-sync"></i> Rerun Profiler
+              </button>
+            </div>
           </div>
         </div>
 

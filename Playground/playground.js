@@ -170,6 +170,19 @@ function updateThemeIndicator(theme) {
 function setupEventListeners() {
     // Run button
     document.getElementById("runBtn").addEventListener("click", runCode);
+
+    // Profile Complexity button
+    const profileBtn = document.getElementById("profileBtn");
+    if (profileBtn) profileBtn.addEventListener("click", runProfiler);
+
+    const rerunProfileBtn = document.getElementById("rerunProfileBtn");
+    if (rerunProfileBtn) rerunProfileBtn.addEventListener("click", runProfiler);
+
+    const closeProfilerBtn = document.getElementById("closeProfilerBtn");
+    if (closeProfilerBtn) closeProfilerBtn.addEventListener("click", () => {
+        const modal = document.getElementById("profilerModal");
+        if (modal) modal.style.display = "none";
+    });
     
     // Clear button
     document.getElementById("clearBtn").addEventListener("click", clearOutput);
@@ -578,12 +591,289 @@ async function runProlog(code) {
     }
 }
 
+// --- PROFILER FUNCTIONS ---
+
+let profilerChartInstance = null;
+
+function drawProfilerChart(canvas, results) {
+    if (!canvas) return;
+    if (!window.Chart) {
+        console.warn('Chart.js is not loaded.');
+        return;
+    }
+
+    const isLight = document.documentElement.classList.contains('light-mode');
+    const textColor = isLight ? '#0f172a' : '#f8fafc';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+
+    const labels = results.map(r => `N=${r.N}`);
+    const empiricalData = results.map(r => r.time);
+    const maxN = results[results.length - 1].N;
+    const maxTime = Math.max(0.001, results[results.length - 1].time);
+
+    const refFns = {
+        'O(1)': n => 1,
+        'O(log N)': n => Math.log2(Math.max(1, n)),
+        'O(N)': n => n,
+        'O(N log N)': n => n * Math.log2(Math.max(1, n)),
+        'O(N²)': n => n * n
+    };
+
+    const refColors = {
+        'O(1)': '#94a3b8',
+        'O(log N)': '#3b82f6',
+        'O(N)': '#10b981',
+        'O(N log N)': '#f59e0b',
+        'O(N²)': '#ef4444'
+    };
+
+    const datasets = [
+        {
+            label: 'Your Code (Empirical)',
+            data: empiricalData,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+            borderWidth: 3,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0.2,
+            fill: false
+        }
+    ];
+
+    for (const [name, fn] of Object.entries(refFns)) {
+        const scale = maxTime / (fn(maxN) || 1);
+        const curveData = results.map(r => Math.max(0, fn(r.N) * scale));
+        datasets.push({
+            label: name,
+            data: curveData,
+            borderColor: refColors[name],
+            borderDash: [4, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false
+        });
+    }
+
+    if (profilerChartInstance) {
+        profilerChartInstance.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    profilerChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: textColor,
+                        font: { family: 'Outfit, Inter, sans-serif', size: 11 },
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = typeof context.raw === 'number' ? context.raw.toFixed(3) : context.raw;
+                            return `${context.dataset.label}: ${val} ms`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor },
+                    title: { display: true, text: 'Input Size (N)', color: textColor }
+                },
+                y: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor },
+                    title: { display: true, text: 'Execution Time (ms)', color: textColor },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function estimateComplexity(results) {
+    if (results.length < 2) return 'O(1)';
+    const shapes = {
+        'O(1)': n => 1,
+        'O(log N)': n => Math.log2(n || 1),
+        'O(N)': n => n,
+        'O(N log N)': n => n * Math.log2(n || 1),
+        'O(N²)': n => n * n,
+        'O(N³)': n => n * n * n,
+        'O(2ᴺ)': n => Math.pow(2, Math.min(n, 30))
+    };
+
+    let bestFit = 'O(N)';
+    let minError = Infinity;
+    const maxN = results[results.length - 1].N;
+    const maxTime = results[results.length - 1].time || 0.001;
+
+    for (const [name, fn] of Object.entries(shapes)) {
+        let error = 0;
+        const scale = maxTime / (fn(maxN) || 1);
+
+        for (const r of results) {
+            const expected = fn(r.N) * scale;
+            error += Math.pow((r.time - expected) / Math.max(0.001, maxTime), 2);
+        }
+
+        if (error < minError) {
+            minError = error;
+            bestFit = name;
+        }
+    }
+    return bestFit;
+}
+
+async function runProfiler() {
+    const lang = currentLanguage || (languageSelector ? languageSelector.value : 'javascript');
+    if (lang !== 'javascript') {
+        alert('The Interactive Profiler currently supports JavaScript in the browser.');
+        return;
+    }
+
+    const code = editor ? editor.getValue() : '';
+    if (!code || !code.trim()) {
+        alert('Please write some code to profile.');
+        return;
+    }
+
+    const modal = document.getElementById('profilerModal');
+    if (modal) modal.style.display = 'flex';
+
+    const statusEl = document.getElementById('profilerStatus');
+    if (statusEl) statusEl.textContent = 'Running profiler against N = 10, 100, 1000, 5000...';
+
+    const compEl = document.getElementById('profComplexity');
+    const avgEl = document.getElementById('profAvgTime');
+    const fastEl = document.getElementById('profFastest');
+    const slowEl = document.getElementById('profSlowest');
+
+    if (compEl) compEl.textContent = 'Profiling...';
+    if (avgEl) avgEl.textContent = '- ms';
+    if (fastEl) fastEl.textContent = '- ms';
+    if (slowEl) slowEl.textContent = '- ms';
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const origLog = console.log;
+    console.log = () => {};
+
+    try {
+        let solveFn;
+        try {
+            solveFn = new Function(
+                '"use strict";\n' + code + '\nreturn (typeof solve !== "undefined" ? solve : (typeof greet !== "undefined" ? greet : (typeof main !== "undefined" ? main : null)));'
+            )();
+        } catch (e) {
+            throw new Error('Syntax or compilation error: ' + e.message);
+        }
+
+        if (typeof solveFn !== 'function') {
+            try {
+                solveFn = new Function('input', '"use strict";\n' + code);
+            } catch (e) {
+                throw new Error('Could not find or construct executable function. Ensure code defines a solve() function.');
+            }
+        }
+
+        const sampleArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 100));
+        let isArgArray = true;
+
+        try {
+            solveFn([...sampleArr]);
+        } catch (errArr) {
+            try {
+                solveFn(10);
+                isArgArray = false;
+            } catch (errNum) {
+                throw new Error('Execution error on sample input: ' + errArr.message);
+            }
+        }
+
+        const sizes = [10, 100, 1000, 5000];
+        const results = [];
+
+        for (const N of sizes) {
+            if (statusEl) statusEl.textContent = `Benchmarking size N = ${N}...`;
+            const input = isArgArray
+                ? Array.from({ length: N }, () => Math.floor(Math.random() * 1000))
+                : N;
+
+            const iterations = N <= 100 ? 5 : 1;
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                if (isArgArray) {
+                    solveFn([...input]);
+                } else {
+                    solveFn(input);
+                }
+            }
+            const end = performance.now();
+            const timeTaken = Math.max(0.001, (end - start) / iterations);
+
+            results.push({ N, time: timeTaken });
+
+            await new Promise(r => setTimeout(r, 15));
+
+            if (timeTaken > 1500 && N !== sizes[sizes.length - 1]) {
+                if (statusEl) statusEl.textContent = `Stopped profiling at N = ${N} due to timeout (>1.5s).`;
+                break;
+            }
+        }
+
+        if (statusEl && results.length === sizes.length) {
+            statusEl.textContent = 'Profiling complete across generated datasets (N = 10, 100, 1000, 5000).';
+        }
+
+        const times = results.map(r => r.time);
+        const avgTime = times.reduce((acc, t) => acc + t, 0) / times.length;
+        const fastest = Math.min(...times);
+        const slowest = Math.max(...times);
+        const complexity = estimateComplexity(results);
+
+        if (compEl) compEl.textContent = complexity;
+        if (avgEl) avgEl.textContent = avgTime.toFixed(3) + ' ms';
+        if (fastEl) fastEl.textContent = fastest.toFixed(3) + ' ms';
+        if (slowEl) slowEl.textContent = slowest.toFixed(3) + ' ms';
+
+        const canvas = document.getElementById('profilerChart');
+        if (canvas) {
+            drawProfilerChart(canvas, results);
+        }
+    } catch (e) {
+        if (compEl) compEl.textContent = 'Error';
+        if (statusEl) statusEl.textContent = 'Profiling error: ' + e.message;
+        alert(e.message || 'Error during profiling');
+        console.error(e);
+    } finally {
+        console.log = origLog;
+    }
+}
+
 // --- EXPORT ---
 
 export {
     initEditor,
     updateEditorTheme,
     runCode,
+    runProfiler,
+    drawProfilerChart,
+    estimateComplexity,
     clearOutput,
     resetEditor,
     saveCode
