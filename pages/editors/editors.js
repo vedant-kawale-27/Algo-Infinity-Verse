@@ -39,6 +39,13 @@ const editors = [
     icon: 'fa-js',
     desc: 'Run JavaScript in a sandboxed environment with sample tests, debug transcripts, and hidden test cases.',
   },
+  {
+    name: 'VB.NET Editor',
+    path: '/pages/editors/vbnet-editor/vbnet-editor.html',
+    category: 'Mainstream Languages',
+    icon: 'fa-cubes',
+    desc: 'Write Visual Basic .NET code with live syntax highlighting, Module and Class templates, LINQ queries, and execution.',
+  },
 
   // ── Web Technologies ──
   {

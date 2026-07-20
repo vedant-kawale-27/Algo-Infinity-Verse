@@ -22,6 +22,7 @@ const templates = {
     java: `// Java Playground\n\npublic class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello Learner");\n  }\n}\n`,
     cpp: `// C++ Playground\n\n#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << "Hello Learner" << endl;\n  return 0;\n}\n`,
     lisp: `;; Common Lisp Playground\n\n(defun greet (name)\n  (format nil "Hello ~a" name))\n\n(write-line (greet "Learner"))\n`,
+    vbnet: `' Visual Basic .NET Playground\nImports System\n\nModule Program\n    Sub Main()\n        Console.WriteLine("Hello Learner from VB.NET!")\n    End Sub\nEnd Module\n`
     fsharp: `// F# Playground\n\nlet greet name =\n    sprintf "Hello %s" name\n\n[<EntryPoint>]\nlet main argv =\n    printfn "%s" (greet "Learner")\n    0\n`
     prolog: `% Prolog Playground\n\nparent(john, bob).\nparent(bob, charlie).\n\nancestor(X, Y) :- parent(X, Y).\nancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).\n\n% Run query: ancestor(john, charlie).\n`
 };
@@ -41,6 +42,7 @@ const codeStorage = {
     java: templates.java,
     cpp: templates.cpp,
     lisp: templates.lisp,
+    vbnet: templates.vbnet
     fsharp: templates.fsharp
     prolog: templates.prolog
 };
@@ -214,6 +216,7 @@ function setupEventListeners() {
             java: 'ace/mode/java',
             cpp: 'ace/mode/c_cpp',
             lisp: 'ace/mode/lisp',
+            vbnet: 'ace/mode/vbscript'
             fsharp: 'ace/mode/fsharp'
             prolog: 'ace/mode/prolog'
         };
@@ -282,6 +285,7 @@ function updateLanguageBadge(language) {
             java: 'Java',
             cpp: 'C++',
             lisp: 'Common Lisp',
+            vbnet: 'VB.NET'
             fsharp: 'F#'
             prolog: 'Prolog'
         };
@@ -305,6 +309,7 @@ const runners = {
     java: runJava,
     cpp: runCpp,
     lisp: runLisp,
+    vbnet: runVbNet
     fsharp: runFSharp
     prolog: runProlog
 };
@@ -523,6 +528,9 @@ async function runLisp(code) {
     }
 }
 
+async function runVbNet(code) {
+    clearOutput();
+    output.textContent = "⏳ Running VB.NET via Piston...";
 async function runFSharp(code) {
     clearOutput();
     output.textContent = "⏳ Running F# via Piston...";
@@ -539,6 +547,7 @@ async function runProlog(code) {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
+                    language: "vb.net",
                     language: "fsharp",
                     language: "prolog",
                     version: "*",
