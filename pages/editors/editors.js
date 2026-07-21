@@ -54,7 +54,6 @@ const editors = [
     category: 'Web Technologies',
     icon: 'fa-html5',
     desc: 'Write HTML and watch it render in real time — no server, no setup. Perfect for learning tags, forms, and layout.',
-  
   },
   {
     name: 'CSS Editor',
@@ -155,6 +154,11 @@ const editors = [
 
   // ── Systems & Special ──
   {
+    name: 'Nim Editor',
+    path: '/pages/editors/nim-editor/nim-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-crown',
+    desc: 'Write Nim programming language code with syntax highlighting, starter templates, and fast simulated execution.',
     name: 'Zig Editor',
     path: '/pages/editors/zig-editor/zig-editor.html',
     category: 'Systems & Special',
@@ -163,19 +167,20 @@ const editors = [
   },
   
   {
-    name: 'D Editor',
-    path: '/pages/editors/d-editor/d-editor.html',
-    category: 'Systems & Special',
-    icon: 'fa-gem',
-    desc: 'Write D language code with syntax highlighting, starter templates, and simulated execution.',
-  },
-  {
     name: 'Go Editor',
     path: '/pages/editors/go-editor/go-editor.html',
     category: 'Systems & Special',
     icon: 'fa-golang',
     desc: 'Learn Golang with a live simulated editor supporting variables, slices, functions, and more.',
   },
+  {
+    name: 'D Editor',
+    path: '/pages/editors/d-editor/d-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-gem',
+    desc: 'Write D language code with syntax highlighting, starter templates, and simulated execution.',
+  },
+  
   {
     name: 'SQL Editor',
     path: '/pages/editors/sql-editor/sql-editor.html',
