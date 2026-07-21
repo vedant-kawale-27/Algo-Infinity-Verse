@@ -170,11 +170,7 @@
         if ((scores[dim.key] || 0) >= i) btn.classList.add('active');
         btn.addEventListener('click', () => {
           scores[dim.key] = i;
-          stars.querySelectorAll('button').forEach((b, idx) => {
-            const on = idx < i;
-            b.classList.toggle('active', on);
-            b.setAttribute('aria-checked', String(on));
-          });
+          renderRubric(scores);
           saveAnswerDraft();
         });
         stars.appendChild(btn);
@@ -253,8 +249,9 @@
     stopTick();
     saveAnswerDraft();
     state.phase = 'scorecard';
-    state.finishedAt = state.finishedAt || new Date().toISOString();
+    state.finishedAt = new Date().toISOString();
     saveSession();
+
     els.setup.classList.add('hidden');
     els.session.classList.add('hidden');
     els.scorecard.classList.remove('hidden');
@@ -379,11 +376,12 @@
     const progress = loadProgress();
     const weak = detectWeakTopics(progress);
 
-    const hasQuizData = !!(progress && progress.quizScores && Object.keys(progress.quizScores).length);
-    if (!hasQuizData) {
-      els.weakEmpty.classList.remove('hidden');
-      els.weakList.classList.add('hidden');
-      return;
+    if (!progress || (!progress.quizScores && !Object.keys(progress.quizScores || {}).length && weak.length === 0)) {
+      if (!progress || !progress.quizScores || Object.keys(progress.quizScores).length === 0) {
+        els.weakEmpty.classList.remove('hidden');
+        els.weakList.classList.add('hidden');
+        return;
+      }
     }
 
     if (weak.length === 0) {
