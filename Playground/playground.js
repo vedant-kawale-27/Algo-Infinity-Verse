@@ -777,7 +777,7 @@ async function runProfiler() {
         let solveFn;
         try {
             solveFn = new Function(
-                '"use strict";\n' + code + '\nreturn (typeof solve !== "undefined" ? solve : (typeof greet !== "undefined" ? greet : (typeof main !== "undefined" ? main : null)));'
+                '"use strict";\n' + code + '\nreturn (typeof solve !== "undefined" ? solve : (typeof solution !== "undefined" ? solution : (typeof main !== "undefined" ? main : null)));'
             )();
         } catch (e) {
             throw new Error('Syntax or compilation error: ' + e.message);
