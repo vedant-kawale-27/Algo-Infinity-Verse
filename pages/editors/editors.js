@@ -154,12 +154,43 @@ const editors = [
 
   // ── Systems & Special ──
   {
+    name: 'Ada Editor',
+    path: '/pages/editors/ada-editor/ada-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-shield-alt',
+    desc: 'Write Ada programming language code with syntax highlighting, starter templates, and fast simulated execution.',
+    name: 'Crystal Editor',
+    path: '/pages/editors/crystal-editor/crystal-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-gem',
+    desc: 'Write Crystal programming language code with syntax highlighting, starter templates, and fast simulated execution.',
+    name: 'Nim Editor',
+    path: '/pages/editors/nim-editor/nim-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-crown',
+    desc: 'Write Nim programming language code with syntax highlighting, starter templates, and fast simulated execution.',
+    name: 'Zig Editor',
+    path: '/pages/editors/zig-editor/zig-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-bolt',
+    desc: 'Write Zig programming language code with syntax highlighting, starter templates, and fast simulated execution.',
+  },
+  
+  {
     name: 'Go Editor',
     path: '/pages/editors/go-editor/go-editor.html',
     category: 'Systems & Special',
     icon: 'fa-golang',
     desc: 'Learn Golang with a live simulated editor supporting variables, slices, functions, and more.',
   },
+  {
+    name: 'D Editor',
+    path: '/pages/editors/d-editor/d-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-gem',
+    desc: 'Write D language code with syntax highlighting, starter templates, and simulated execution.',
+  },
+  
   {
     name: 'SQL Editor',
     path: '/pages/editors/sql-editor/sql-editor.html',
@@ -203,6 +234,10 @@ const filterContainer = document.getElementById('edFilters');
 const emptyState = document.getElementById('edEmpty');
 const countDisplay = document.getElementById('edCountDisplay');
 
+let activeCategory =
+  new URLSearchParams(window.location.search).get('category') ||
+  localStorage.getItem('edFilterCategory') ||
+  'all';
 /* ─── Safe localStorage helper ─── */
 function lsGet(key) {
   try {
@@ -692,6 +727,7 @@ render();
 window.addEventListener('popstate', () => {
   activeCategory =
     new URLSearchParams(window.location.search).get('category') ||
+    localStorage.getItem('edFilterCategory') ||
     lsGet('edFilterCategory') ||
     'all';
   syncChipFromURL();
