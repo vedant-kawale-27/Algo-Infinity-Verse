@@ -154,6 +154,11 @@ const editors = [
 
   // ── Systems & Special ──
   {
+    name: 'Ada Editor',
+    path: '/pages/editors/ada-editor/ada-editor.html',
+    category: 'Systems & Special',
+    icon: 'fa-shield-alt',
+    desc: 'Write Ada programming language code with syntax highlighting, starter templates, and fast simulated execution.',
     name: 'Crystal Editor',
     path: '/pages/editors/crystal-editor/crystal-editor.html',
     category: 'Systems & Special',
