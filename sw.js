@@ -16,9 +16,11 @@ self.addEventListener('install', (e) => {
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        return cache.addAll(WASM_ASSETS).catch((err) => {
-          console.warn('SW cache pre-fetch warning:', err);
-        });
+        return Promise.all(
+          WASM_ASSETS.map((url) =>
+            cache.add(url).catch((err) => console.warn(`SW cache pre-fetch failed for ${url}:`, err))
+          )
+        );
       })
       .then(() => self.skipWaiting())
   );
